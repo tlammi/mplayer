@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mplayer"
+version = "0.0.1"
+authors = [
+  { name = "Toni Lammi", email="tangojulielima@gmail.com"}
+]
+description="Program for running media shows"
+requires-python = ">=3.11"
+
+[project.scripts]
+mplayer = "mplayer.main:main"
+
+[tool.setuptools]
+packages = ["mplayer"]
+

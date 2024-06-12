@@ -1,0 +1,6 @@
+name: test
+media:
+  - glob://*.png
+  # - url: tux.png
+  #   filters:
+  #     newest: 20
