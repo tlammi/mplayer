@@ -1,8 +1,6 @@
 import os
 import asyncio
-import tkinter
 import logging
-import time
 
 from datetime import timedelta
 

@@ -13,7 +13,7 @@ test-all:
 
 .PHONY: lint
 lint:
-	pycodestyle mplayer
+	pyright mplayer
 
 .PHONY: format
 format:
