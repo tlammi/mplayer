@@ -49,6 +49,12 @@ def test_next():
     assert e == _mk_event(3)
 
 
+def test_next_after():
+    s = Schedule([_mk_event(0), _mk_event(1), _mk_event(2)])
+    e = s.next(now=_mk_datetime(3))
+    assert e is None
+
+
 def test_non_expired():
     s = Schedule([_mk_event(1), _mk_event(0), _mk_event(3)])
     s = s.non_expired(now=_mk_datetime(2))

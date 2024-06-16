@@ -61,12 +61,14 @@ class Schedule(List[Event]):
                 return e
         return None
 
-    def next(self, now=datetime.now()) -> Event | None:
+    def next(self, now: datetime | None = None) -> Event | None:
         """
         Get the next event
         """
+        now = now or datetime.now()
         for e in self:
             if e.when > now:
+                print(e.when, now)
                 return e
         return None
 

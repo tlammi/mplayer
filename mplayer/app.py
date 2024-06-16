@@ -44,6 +44,10 @@ class App:
     async def play(self):
         while True:
             async for m in self._core.medias(wait=True):
-                await self._player.play(m)
+                try:
+                    await self._player.play(m)
+                except FileNotFoundError:
+                    _L.info("Media file disappeared. Requesting rescan")
+                    self._core.request_rescan()
             if not self._repeat:
                 break

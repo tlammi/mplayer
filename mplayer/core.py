@@ -3,12 +3,15 @@ Program core
 """
 
 import asyncio
+import logging
 
 from pathlib import Path
 from typing import AsyncGenerator, Iterable
 from .ctx import Ctx
 from .playlist import PlaylistSpec, Playlist, Entry as PlaylistEntry
 from .schedule import Schedule
+
+_L = logging.getLogger(__name__)
 
 
 async def _to_playlists(files: Iterable[Path]) -> AsyncGenerator[Playlist, None]:
@@ -48,9 +51,16 @@ class Core:
         self._ctx = Ctx([], None)
         # wait for media when playlists are empty
         self._new_plist = asyncio.Event()
+        self._rescan_task: asyncio.Task | None = None
 
     def rescan(self):
         return self._load_ctx()
+
+    def request_rescan(self):
+        _L.debug("input file rescan requested")
+        if self._rescan_task is None or self._rescan_task.done():
+            self._rescan_task = asyncio.create_task(self.rescan())
+            _L.debug("scheduled rescan task")
 
     def medias(self, *, wait: bool) -> AsyncGenerator[Path, None]:
         """
@@ -63,20 +73,24 @@ class Core:
         """
 
         async def generator() -> AsyncGenerator[Path, None]:
-            plists = [p for p in self._ctx.active_playlists() if p]
-            if not plists:
-                if not wait:
-                    return
-                self._new_plist.clear()
-                await self._new_plist.wait()
-            for plist in plists:
-                for e in plist:
-                    yield e.resource
-                    await asyncio.sleep(0)
+            while True:
+                plists = [p for p in self._ctx.active_playlists() if p]
+                if not plists:
+                    if not wait:
+                        return
+                    self._new_plist.clear()
+                    await self._new_plist.wait()
+                    continue
+                for plist in plists:
+                    for e in plist:
+                        yield e.resource
+                        await asyncio.sleep(0)
+                return
 
         return generator()
 
     async def _load_ctx(self):
+        _L.debug("(re)loading input file context")
         self._new_plist.set()
         sched = Schedule.from_file(self._sched) if self._sched is not None else None
         playlists = []

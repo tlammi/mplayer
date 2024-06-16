@@ -87,16 +87,12 @@ async def _run(ns: argparse.Namespace):
     Run the player in foreground mode
     """
     core = await make_core(ns.files, ns.schedule)
-
-    def schedule_rescan():
-        asyncio.create_task(core.rescan())
-
-    asyncio.get_running_loop().add_signal_handler(signal.SIGHUP, schedule_rescan)
+    asyncio.get_running_loop().add_signal_handler(signal.SIGHUP, core.request_rescan)
     app = App(core)
     if ns.image_duration is not None:
         await app.set_image_duration(ns.image_duration)
     await app.set_fullscreen(ns.fullscreen)
-    await app.set_repeat(ns.repeat)
+    await app.set_repeat(ns.repeat or bool(ns.schedule))
     await app.play()
 
 

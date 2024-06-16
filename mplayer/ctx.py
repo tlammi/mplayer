@@ -3,6 +3,7 @@ Context
 """
 
 import asyncio
+import logging
 
 from datetime import datetime
 from pathlib import Path
@@ -10,6 +11,8 @@ from collections.abc import AsyncGenerator, Collection, Iterable
 
 from .playlist import Playlist
 from .schedule import Schedule
+
+_L = logging.getLogger(__name__)
 
 
 class Ctx:
@@ -54,17 +57,21 @@ class Ctx:
 
     async def _update_active_playlist(self):
         assert self._sched is not None
+        _L.debug("scheduling enabled")
         while True:
             try:
                 self._active_plist = await self._next_event(self._sched)
+                _L.info('switched active playlist to "%s"', self._active_plist)
             except asyncio.CancelledError:
+                _L.info("no more events in schedule")
                 break
 
     @staticmethod
     async def _next_event(sched: Schedule) -> str:
-        while True:
-            next_event = sched.next()
-            if next_event is None:
-                raise asyncio.CancelledError()
-            await asyncio.sleep((next_event.when - datetime.now()).total_seconds())
-            return next_event.playlist
+        next_event = sched.next()
+        if next_event is None:
+            raise asyncio.CancelledError()
+        diff = next_event.when - datetime.now()
+        _L.debug("next event in schedule in %ss", diff.total_seconds())
+        await asyncio.sleep((next_event.when - datetime.now()).total_seconds())
+        return next_event.playlist
