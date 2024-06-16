@@ -1,1 +1,2 @@
 python-vlc >= 3.0.20123
+pyyaml >= 6.0.1

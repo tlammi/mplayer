@@ -3,7 +3,6 @@
 test:
 	pytest test/unit
 
-
 .PHONY: test-smoke
 test-smoke:
 	pytest test/smoke
@@ -20,3 +19,10 @@ lint:
 format:
 	black .
 
+.PHONY: wheel
+wheel:
+	python -m build
+
+.PHONY: clean
+clean:
+	rm -rf dist

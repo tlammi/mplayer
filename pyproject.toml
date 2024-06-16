@@ -3,8 +3,9 @@ requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
+dynamic = ["dependencies"]
 name = "mplayer"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name = "Toni Lammi", email="tangojulielima@gmail.com"}
 ]
@@ -17,3 +18,5 @@ mplayer = "mplayer.main:main"
 [tool.setuptools]
 packages = ["mplayer"]
 
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
