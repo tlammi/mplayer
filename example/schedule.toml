@@ -4,7 +4,7 @@ playlist_names = ["mainokset", "kuvat"]
 # Schedule of playlists
 [[schedule]]
 playlist = "mainokset"
-time = 2025-06-18 00:00:00
+at = 2025-06-18 00:00:00
 
 [[schedule]]
 playist = "kuvat"
