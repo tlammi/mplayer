@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from mplayer.schedule_doc import ScheduleDoc
 
@@ -6,6 +6,9 @@ from mplayer.schedule_doc import ScheduleDoc
 def _dt_str(s: str):
     return datetime.fromisoformat(s)
 
+def _td_str(s: str):
+    hours, mins, secs = s.split(":")
+    return timedelta(hours=int(hours), minutes=int(mins), seconds=int(secs))
 
 def test_default():
     s = ScheduleDoc()
@@ -48,4 +51,20 @@ at = 2000-01-01 01:00:00
     assert bar.playlist == "bar"
     assert foo.at == _dt_str("2000-01-01T00:00:00")
     assert bar.at == _dt_str("2000-01-01T01:00:00")
+
+def test_offset_event():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = 2000-01-01
+[[schedule]]
+playlist = "bar"
+offset = 01:00:00
+"""
+    s = ScheduleDoc.from_str(data)
+    assert len(s) == 2
+    foo, bar = s
+    assert foo.playlist == "foo"
+    assert bar.playlist == "bar"
+    assert bar.offset == _td_str("01:00:00")
 
