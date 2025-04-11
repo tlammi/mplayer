@@ -1,0 +1,15 @@
+# List of playlists, used to protect against typos
+playlist_names = ["mainokset", "kuvat"]
+
+# Schedule of playlists
+[[schedule]]
+playlist = "mainokset"
+time = 2025-06-18 00:00:00
+
+[[schedule]]
+playist = "kuvat"
+time-offset = 01:00:00
+
+[[schedule]]
+playlist = "mainokset"
+time = "25:00:00"

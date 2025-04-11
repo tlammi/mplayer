@@ -1,0 +1,31 @@
+root = "."
+
+[suite.adds]
+glob = "Mainokset/*.mp4"
+
+[suite.prog_wed]
+glob = "Ohjelma/Ke/*.mp4"
+
+[suite.prog_thu]
+glob = "Ohjelma/To/*.mp4"
+
+[suite.prog_fri]
+glob = "Ohjelma/Pe/*.mp4"
+
+[suite.prog_sat]
+glob = "Ohjelma/La/*.mp4"
+
+[suite.pics]
+glob = "Photo/*.JPG"
+filter = {
+  algo = "newest",
+  count = 5
+}
+
+[playlist.mainokset]
+glob = "Mainokset/*.mp4"
+
+[playlist.kuvat_ke]
+glob = [
+  "Ohjelma/Ke/*.mp4",
+]

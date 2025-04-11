@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-import yaml
+import tomli
 
 from mplayer.schedule import Schedule, Event
 
@@ -13,17 +13,17 @@ def _mk_event(stamp: int):
     return Event(when=_mk_datetime(stamp), playlist=str(stamp))
 
 
-def test_init():
+def test_init_empty():
     s = Schedule()
     assert len(s) == 0
 
 
-def test_init_event():
+def test_init_one_event():
     s = Schedule({Event(when=datetime.now(), playlist="a")})
     assert len(s) == 1
 
 
-def test_init_event_list():
+def test_init_multiple_event():
     s = Schedule(
         [
             Event(when=_mk_datetime(1), playlist="a"),
