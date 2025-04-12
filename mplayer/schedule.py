@@ -2,9 +2,11 @@
 Scheduling
 """
 
+import os
 
 from dataclasses import dataclass
 from datetime import datetime, date, timedelta, time
+from os import stat
 
 import tomli
 
@@ -79,8 +81,35 @@ class RawSchedule(list[Event|OffsetEvent]):
     def from_str(cls, data: str):
         return cls.from_obj(tomli.loads(data))
 
+    @classmethod
+    def from_file(cls, path: os.PathLike) -> "RawSchedule":
+        with open(path, "rb") as f:
+            return cls.from_obj(tomli.load(f))
+
 class Schedule(list[Event]):
     """
     Processed schedule where offsets are resolved to time points
     """
-    pass
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def from_obj(data: dict) -> "Schedule":
+        raw = RawSchedule.from_obj(data)
+        res = Schedule()
+        for i in raw:
+            if isinstance(i, Event):
+                res.append(i)
+            else:
+                res.append(i.absolute(res[-1]))
+        return res
+
+    @classmethod
+    def from_str(cls, data: str) -> "Schedule":
+        return cls.from_obj(tomli.loads(data))
+
+    @classmethod
+    def from_file(cls, path: os.PathLike) -> "Schedule":
+        with open(path, "rb") as f:
+            return cls.from_obj(tomli.load(f))

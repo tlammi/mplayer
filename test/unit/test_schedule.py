@@ -1,92 +1,150 @@
 from datetime import datetime, timedelta
 
-import tomli
+import pytest
 
-from mplayer.schedule import Schedule, Event
-
-
-def _mk_datetime(stamp: int):
-    return datetime.fromtimestamp(stamp)
+from mplayer.schedule import Schedule, RawSchedule, Event, OffsetEvent
 
 
-def _mk_event(stamp: int):
-    return Event(when=_mk_datetime(stamp), playlist=str(stamp))
+def _dt_str(s: str):
+    return datetime.fromisoformat(s)
 
+def _td_str(s: str):
+    hours, mins, secs = s.split(":")
+    return timedelta(hours=int(hours), minutes=int(mins), seconds=int(secs))
 
-def test_init_empty():
+def test_default():
     s = Schedule()
     assert len(s) == 0
 
+def test_default_raw():
+    s = RawSchedule()
+    assert len(s) == 0
 
-def test_init_one_event():
-    s = Schedule({Event(when=datetime.now(), playlist="a")})
+def test_from_str_empty():
+    s = RawSchedule.from_str("")
+    assert len(s) == 0
+
+def test_from_str_enums_only():
+    s = RawSchedule.from_str('playlists = ["foo", "bar"]')
+    assert len(s) == 0
+
+def test_from_str_one():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = 2000-01-01
+"""
+    s = RawSchedule.from_str(data)
     assert len(s) == 1
+    evt = s[0]
+    assert isinstance(evt, Event)
+    assert evt.playlist == "foo"
+    assert evt.at == _dt_str("2000-01-01")
 
+def test_from_str_two():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = 2000-01-01 00:00:00
 
-def test_init_multiple_event():
-    s = Schedule(
-        [
-            Event(when=_mk_datetime(1), playlist="a"),
-            Event(when=_mk_datetime(0), playlist="b"),
-        ]
-    )
+[[schedule]]
+playlist = "bar"
+at = 2000-01-01 01:00:00
+"""
+    s = RawSchedule.from_str(data)
     assert len(s) == 2
-    assert s == [
-        Event(when=_mk_datetime(0), playlist="b"),
-        Event(when=_mk_datetime(1), playlist="a"),
-    ]
+    foo, bar = s
+    assert isinstance(foo, Event)
+    assert isinstance(bar, Event)
+    assert foo.playlist == "foo"
+    assert bar.playlist == "bar"
+    assert foo.at == _dt_str("2000-01-01T00:00:00")
+    assert bar.at == _dt_str("2000-01-01T01:00:00")
 
-
-def test_current():
-    s = Schedule([_mk_event(1), _mk_event(0), _mk_event(3)])
-    e = s.current(now=_mk_datetime(2))
-    assert e == _mk_event(1)
-
-
-def test_next():
-    s = Schedule([_mk_event(1), _mk_event(0), _mk_event(3)])
-    e = s.next(now=_mk_datetime(2))
-    assert e == _mk_event(3)
-
-
-def test_next_after():
-    s = Schedule([_mk_event(0), _mk_event(1), _mk_event(2)])
-    e = s.next(now=_mk_datetime(3))
-    assert e is None
-
-
-def test_non_expired():
-    s = Schedule([_mk_event(1), _mk_event(0), _mk_event(3)])
-    s = s.non_expired(now=_mk_datetime(2))
-    assert s == [_mk_event(1), _mk_event(3)]
-
-
-def test_parse():
-    yml = """
-- after: 0
-  playlist: "asdf"
+def test_offset_event():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = 2000-01-01
+[[schedule]]
+playlist = "bar"
+offset = 01:00:00
 """
-    s = Schedule.from_yaml(yaml.safe_load(yml))
-    assert s == Schedule([Event(when=datetime.fromtimestamp(0), playlist="asdf")])
+    s = RawSchedule.from_str(data)
+    assert len(s) == 2
+    foo, bar = s
+    assert foo.playlist == "foo"
+    assert bar.playlist == "bar"
+    assert isinstance(bar, OffsetEvent)
+    assert bar.offset == _td_str("01:00:00")
 
-
-def test_parse_delta():
-    yml = """
-- after: now+1
-  playlist: "asdf"
+def test_invalid_enum():
+    data = """
+playlists = ["foo", "bar"]
+[[schedule]]
+playlist = "baz"
+at = 2000-01-01 00:00:00
 """
-    now = datetime.now()
-    plus_one = now + timedelta(seconds=1)
-    s = Schedule.from_yaml(yaml.safe_load(yml), now)
-    assert s == Schedule([Event(when=plus_one, playlist="asdf")])
+    with pytest.raises(ValueError):
+        RawSchedule.from_str(data)
 
-
-def test_parse_abs():
-    now = datetime.now().replace(second=0, microsecond=0)
-    now_txt = now.strftime("%Y-%m-%d %H:%M")
-    yml = f"""
-- after: {now_txt}
-  playlist: "asdf"
+def test_invalid_at():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = 2000-01-01 00
 """
-    s = Schedule.from_yaml(yaml.safe_load(yml), now)
-    assert s == Schedule([Event(when=now, playlist="asdf")])
+    with pytest.raises(ValueError):
+        RawSchedule.from_str(data)
+
+def test_offset_to_abs():
+    start = _dt_str("2000-01-01")
+    prev = Event(playlist="foo", at=start)
+    offset = OffsetEvent(playlist="bar", offset=_td_str("10:00:00"))
+    res = offset.absolute(prev)
+    assert res.playlist=="bar"
+    assert res.at == _dt_str("2000-01-01T10:00:00")
+
+def test_sched_abs():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = 2000-01-01 00:00:00
+[[schedule]]
+playlist = "bar"
+at = 2000-01-01 00:00:00
+"""
+    s = Schedule.from_str(data)
+    assert len(s) == 2
+    foo, bar = s
+    assert foo.playlist == "foo"
+    assert bar.playlist == "bar"
+
+def test_sched_offset():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = 2000-01-01
+[[schedule]]
+playlist = "bar"
+offset = 10:00:00
+"""
+    s = Schedule.from_str(data)
+    _, bar = s
+    assert bar.at == _dt_str("2000-01-01T10:00:00")
+
+def test_sched_offset_chained():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = 2000-01-01
+[[schedule]]
+playlist = "bar"
+offset = 10:00:00
+[[schedule]]
+playlist = "baz"
+offset = 02:00:00
+"""
+    s = Schedule.from_str(data)
+    _, _, baz = s
+    assert baz.at == _dt_str("2000-01-01T12:00:00")
