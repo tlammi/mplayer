@@ -83,3 +83,23 @@ at = 2000-01-01 00:00:00
 """
     with pytest.raises(ValueError):
         RawSchedule.from_str(data)
+
+def test_invalid_at():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = 2000-01-01 00
+"""
+    with pytest.raises(ValueError):
+        RawSchedule.from_str(data)
+
+
+
+def test_offset_to_abs():
+    start = _dt_str("2000-01-01")
+    prev = Event(playlist="foo", at=start)
+    offset = OffsetEvent(playlist="bar", offset=_td_str("10:00:00"))
+    res = offset.absolute(prev)
+    assert res.playlist=="bar"
+    assert res.at == _dt_str("2000-01-01T10:00:00")
+

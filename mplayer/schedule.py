@@ -36,6 +36,18 @@ class OffsetEvent:
     playlist: str
     offset: timedelta
 
+
+    def absolute(self, prev: Event) -> Event:
+        """
+        Convert offset event to absolute
+
+        This adds the time offset specified in self to the previous event and
+        returns a new Event corresponding to this OffsetEvent.
+        """
+
+        return Event(playlist=self.playlist, at=prev.at+self.offset)
+
+
     @staticmethod
     def from_obj(d: dict) -> "OffsetEvent":
         return OffsetEvent(playlist=d["playlist"], offset=_to_timedelta(d["offset"]))
