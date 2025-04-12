@@ -95,8 +95,7 @@ class Schedule(list[Event]):
         pass
 
     @staticmethod
-    def from_obj(data: dict) -> "Schedule":
-        raw = RawSchedule.from_obj(data)
+    def from_raw(raw: RawSchedule) -> "Schedule":
         res = Schedule()
         for i in raw:
             if isinstance(i, Event):
@@ -106,10 +105,13 @@ class Schedule(list[Event]):
         return res
 
     @classmethod
+    def from_obj(cls, data: dict) -> "Schedule":
+        return cls.from_raw(RawSchedule.from_obj(data))
+
+    @classmethod
     def from_str(cls, data: str) -> "Schedule":
-        return cls.from_obj(tomli.loads(data))
+        return cls.from_raw(RawSchedule.from_str(data))
 
     @classmethod
     def from_file(cls, path: os.PathLike) -> "Schedule":
-        with open(path, "rb") as f:
-            return cls.from_obj(tomli.load(f))
+        return cls.from_raw(RawSchedule.from_file(path))
