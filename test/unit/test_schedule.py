@@ -198,3 +198,14 @@ at = "25:00:00"
     assert evt.playlist == "bar"
     assert evt.at == _dt_str("2000-01-02 01:00:00")
 
+def test_enforce_schedule_order():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = 2000-01-01 01:00:00
+[[schedule]]
+playlist = "bar"
+at = 2000-01-01 00:00:00
+"""
+    with pytest.raises(ValueError):
+        Schedule.from_str(data)

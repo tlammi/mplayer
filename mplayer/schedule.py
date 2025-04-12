@@ -59,6 +59,11 @@ def _to_timedelta(val: timedelta | time):
         return val
     return timedelta(hours=val.hour, minutes=val.minute, seconds=val.second)
 
+class _InvalidEventError(ValueError):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
 @dataclass
 class Event:
     playlist: str
@@ -70,7 +75,7 @@ class Event:
         try:
             return Event(d["playlist"], _to_datetime(d["at"], dt))
         except KeyError:
-            raise ValueError("Invalid event")
+            raise _InvalidEventError("Invalid event")
 
 @dataclass
 class OffsetEvent:
@@ -111,7 +116,7 @@ class RawSchedule(list[Event|OffsetEvent]):
                 evt = Event.from_obj(obj, active_date)
                 active_date = evt.at.date()
                 s.append(evt)
-            except ValueError:
+            except _InvalidEventError:
                 s.append(OffsetEvent.from_obj(obj))
         if enums:
             for item in s:
@@ -146,6 +151,11 @@ class Schedule(list[Event]):
                 res.append(i)
             else:
                 res.append(i.absolute(res[-1]))
+        prev_dt = datetime.min
+        for i in res:
+            if i.at < prev_dt:
+                raise ValueError("Scheduled events not in order")
+            prev_dt = i.at
         return res
 
     @classmethod
