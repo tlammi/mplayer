@@ -7,10 +7,47 @@ import os
 from dataclasses import dataclass
 from datetime import datetime, date, timedelta, time
 
-import tomli
+import tomllib
+
+from . import util
+
+def __is_date(s: str):
+    return len(s.split("-")) == 3
+
+def __is_time(s: str):
+    parts = s.split(":")
+    if len(parts) > 3:
+        return False
+    if any(len(p) != 2 for p in parts):
+        return False
+    for p in parts:
+        for c in p:
+            if c > '9' or c < '0':
+                return False
+    return True
+
+def _to_dt_from_str(s: str, curr_date: date) -> datetime | date:
+    err = ValueError(f"Could not parse datetime/date/time from '{s}'")
+    parts = s.split(" ")
+    parts = [s for p in s.split(" ") for s in p.split("T")]
+    if len(parts) > 2:
+        raise err
+    if len(parts) == 2:
+        tm, overflow = util.parse_time_overflow(parts[1])
+        dt = date.fromisoformat(parts[0]) + timedelta(days=overflow)
+        return datetime.combine(dt, tm)
+    value = parts[0]
+    if __is_date(value):
+        return date.fromisoformat(value)
+    if __is_time(value):
+        tm, overflow = util.parse_time_overflow(value)
+        return datetime.combine(curr_date + timedelta(days=overflow), tm)
+    raise err
 
 
-def _to_datetime(val: datetime | date | time, dt: date):
+def _to_datetime(val: datetime | date | time | str, dt: date) -> datetime:
+    if isinstance(val, str):
+        return _to_datetime(_to_dt_from_str(val, dt), dt)
     if isinstance(val, datetime):
         return val
     if isinstance(val, date):
@@ -75,23 +112,23 @@ class RawSchedule(list[Event|OffsetEvent]):
                 active_date = evt.at.date()
                 s.append(evt)
             except ValueError:
-                if len(s) == 0:
-                    raise ValueError("Offset event cannot be first event")
                 s.append(OffsetEvent.from_obj(obj))
         if enums:
             for item in s:
                 if item.playlist not in enums:
                     raise ValueError(f"Invalid playlist: {item.playlist}")
+        if s and isinstance(s[0], OffsetEvent):
+            raise ValueError("Offset event cannot be first event")
         return s
 
     @classmethod
     def from_str(cls, data: str):
-        return cls.from_obj(tomli.loads(data))
+        return cls.from_obj(tomllib.loads(data))
 
     @classmethod
     def from_file(cls, path: os.PathLike) -> "RawSchedule":
         with open(path, "rb") as f:
-            return cls.from_obj(tomli.load(f))
+            return cls.from_obj(tomllib.load(f))
 
 class Schedule(list[Event]):
     """

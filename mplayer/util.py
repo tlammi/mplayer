@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, time
 
 
 def _get_unit(s: str):
@@ -48,3 +48,39 @@ def parse_timedelta(s: str):
 
     map = {_get_unit(u.strip()): i for u, i in zip(units, ints)}
     return timedelta(**map)
+
+def parse_time_overflow(s: str) -> tuple[time, int]:
+    """
+    Parse ISO time format (12:23:34) while allowing hour overflows.
+
+    Maximum value is 99:59:59
+
+    :return: Parsed time with overflows removed + number of days overflowed
+    """
+    err = ValueError(f"Invalid time: '{s}'")
+    parts = s.split(":")
+    if any(len(p) != 2 for p in parts):
+        raise err
+    for p in parts:
+        for c in p:
+            if c > '9' or c < '0':
+                raise err
+    days=0
+    hours=0
+    mins=0
+    secs=0
+    part = parts.pop(0).lstrip('0')
+    if part:
+        hours = int(part)
+    while(hours > 23):
+        hours -= 24
+        days += 1
+    if parts:
+        part = parts.pop(0).lstrip("0")
+        if part:
+            mins = int(part)
+    if parts:
+        part = parts.pop(0).lstrip("0")
+        if part:
+            secs = int(part)
+    return time(hours, mins, secs), days

@@ -172,3 +172,29 @@ offset = 10:00:00
 """
     with pytest.raises(ValueError):
         s = RawSchedule.from_str(data)
+
+def test_allow_time_overflow():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = "2000-01-01 25:00:00"
+"""
+    s = Schedule.from_str(data)
+    evt = s.pop()
+    assert evt.playlist == "foo"
+    assert evt.at == _dt_str("2000-01-02 01:00:00")
+
+def test_allow_time_overflow_time_only():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = "2000-01-01 00:00:00"
+[[schedule]]
+playlist = "bar"
+at = "25:00:00"
+"""
+    s = Schedule.from_str(data)
+    _, evt = s
+    assert evt.playlist == "bar"
+    assert evt.at == _dt_str("2000-01-02 01:00:00")
+
