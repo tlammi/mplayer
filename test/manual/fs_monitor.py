@@ -13,7 +13,7 @@ from mplayer import fs
 
 
 async def hello():
-    async for evt in fs.monitor(".", recursive=True, ignore_dirs=True):
+    async for evt in fs.monitor(sys.argv[1], recursive=True, ignore_dirs=True):
         print(f"{evt.src} {evt.kind}")
 
 def main():
