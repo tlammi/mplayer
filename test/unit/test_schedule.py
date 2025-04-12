@@ -148,3 +148,27 @@ offset = 02:00:00
     s = Schedule.from_str(data)
     _, _, baz = s
     assert baz.at == _dt_str("2000-01-01T12:00:00")
+
+def test_only_time():
+    data = """
+[[schedule]]
+playlist = "foo"
+at = 2000-01-01 15:00:00
+[[schedule]]
+playlist = "bar"
+at = 16:00:00
+"""
+    s = Schedule.from_str(data)
+    _, bar = s
+    assert bar.playlist == "bar"
+    assert bar.at == _dt_str("2000-01-01 16:00:00")
+
+
+def test_offset_cannot_be_first():
+    data = """
+[[schedule]]
+playlist = "foo"
+offset = 10:00:00
+"""
+    with pytest.raises(ValueError):
+        s = RawSchedule.from_str(data)

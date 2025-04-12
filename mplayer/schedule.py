@@ -6,15 +6,16 @@ import os
 
 from dataclasses import dataclass
 from datetime import datetime, date, timedelta, time
-from os import stat
 
 import tomli
 
 
-def _to_datetime(val: datetime | date):
+def _to_datetime(val: datetime | date | time, dt: date):
     if isinstance(val, datetime):
         return val
-    return datetime.combine(val, datetime.min.time())
+    if isinstance(val, date):
+        return datetime.combine(val, datetime.min.time())
+    return datetime.combine(dt, val)
 
 def _to_timedelta(val: timedelta | time):
     if isinstance(val, timedelta):
@@ -27,9 +28,10 @@ class Event:
     at: datetime
 
     @staticmethod
-    def from_obj(d: dict)->"Event":
+    def from_obj(d: dict, dt: date|None = None)->"Event":
+        dt = dt if dt is not None else datetime.now().date()
         try:
-            return Event(d["playlist"], _to_datetime(d["at"]))
+            return Event(d["playlist"], _to_datetime(d["at"], dt))
         except KeyError:
             raise ValueError("Invalid event")
 
@@ -66,10 +68,15 @@ class RawSchedule(list[Event|OffsetEvent]):
     def from_obj(data: dict) -> "RawSchedule":
         s = RawSchedule()
         enums = data.get("playlists", [])
+        active_date = datetime.now().date()
         for obj in data.get("schedule", []):
             try:
-                s.append(Event.from_obj(obj))
+                evt = Event.from_obj(obj, active_date)
+                active_date = evt.at.date()
+                s.append(evt)
             except ValueError:
+                if len(s) == 0:
+                    raise ValueError("Offset event cannot be first event")
                 s.append(OffsetEvent.from_obj(obj))
         if enums:
             for item in s:
