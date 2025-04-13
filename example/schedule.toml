@@ -7,9 +7,9 @@ playlist = "mainokset"
 at = 2025-06-18 00:00:00
 
 [[schedule]]
-playist = "kuvat"
+playlist = "kuvat"
 offset = 01:00:00
 
 [[schedule]]
 playlist = "mainokset"
-offset = "25:00:00"
+at = "25:00:00"

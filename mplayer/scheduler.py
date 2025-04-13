@@ -18,6 +18,12 @@ class Scheduler:
             return None
         return self._sched[idx]
 
+    def next(self, now = datetime.now()) -> Event | None:
+        idx = self._active_idx(now)+1
+        if idx >= len(self._sched):
+            return None
+        return self._sched[idx]
+
     async def event_stream(self, clock: Callable[[], datetime] = datetime.now) -> AsyncGenerator[Event]:
         idx = self._active_idx(clock())
         sched = self._sched
