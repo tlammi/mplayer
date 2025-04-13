@@ -1,31 +1,42 @@
+# Root path for the suites/playlists
+# Relative paths are relative to the config file location
 root = "."
 
-[suite.adds]
-glob = "Mainokset/*.mp4"
+# Playlist is a set of media files to play
+# The first variant prints the globs directly
+[playlist.adds]
+globs = ["Mainokset/*.mp4"]
 
-[suite.prog_wed]
-glob = "Ohjelma/Ke/*.mp4"
-
-[suite.prog_thu]
-glob = "Ohjelma/To/*.mp4"
-
-[suite.prog_fri]
-glob = "Ohjelma/Pe/*.mp4"
-
-[suite.prog_sat]
-glob = "Ohjelma/La/*.mp4"
-
-[suite.pics]
-glob = "Photo/*.JPG"
+# Filters filer the data dynamically, in this case 5 newest files are selected
+[playlist.pics]
+globs = "Photo/*.JPG"
 filter = {
   algo = "newest",
   count = 5
 }
 
-[playlist.mainokset]
-glob = "Mainokset/*.mp4"
+# The second variant adds indirection by referencing other playlists.
+[playlist.wed]
+from = ["prog_wed", "pics"]
 
-[playlist.kuvat_ke]
-glob = [
-  "Ohjelma/Ke/*.mp4",
-]
+[playlist.thu]
+from = ["prog_thu", "pics"]
+
+[playlist.fri]
+from = ["prog_fri", "pics"]
+
+[playlist.sat]
+from = ["prog_sat", "pics"]
+
+[playlist.prog_wed]
+globs = "Ohjelma/Ke/*.mp4"
+
+[playlist.prog_thu]
+globs = "Ohjelma/To/*.mp4"
+
+[playlist.prog_fri]
+globs = "Ohjelma/Pe/*.mp4"
+
+[playlist.prog_sat]
+globs = "Ohjelma/La/*.mp4"
+
