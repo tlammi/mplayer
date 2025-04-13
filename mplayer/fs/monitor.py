@@ -20,6 +20,14 @@ class EventType(Enum):
 
 @dataclass
 class Event:
+    """
+    File system event
+
+    src: Source path. Always populated
+    dst: Destination path. Populated if fitting
+    kind: Event type
+    is_directory: Whether the event target is a directory
+    """
     src: PurePath
     dst: PurePath
     kind: EventType
@@ -34,10 +42,11 @@ class Event:
         return Event(src=src, dst=dst, kind=EventType(evt.event_type), is_directory=evt.is_directory)
 
 class _EventHandler(FileSystemEventHandler):
-    def __init__(self, loop: asyncio.AbstractEventLoop, queue: asyncio.Queue[Event], filters: list[str] | None, ignore_dirs: bool):
+    def __init__(self, loop: asyncio.AbstractEventLoop, queue: asyncio.Queue[Event], root: PurePath, filters: list[str] | None, ignore_dirs: bool):
         super().__init__()
         self._loop = loop
         self._queue = queue
+        self._root = root
         self._filters = filters or []
         self._ignore_dirs = ignore_dirs
         for f in self._filters:
@@ -48,6 +57,10 @@ class _EventHandler(FileSystemEventHandler):
         if self._ignore_dirs and event.is_directory:
             return
         evt = Event.from_fs_event(event)
+        if evt.src != PurePath():
+            evt.src = evt.src.relative_to(self._root)
+        if evt.dst != PurePath():
+            evt.dst = evt.dst.relative_to(self._root)
         for f in self._filters:
             if f.startswith("+"):
                 if not evt.src.full_match(f[1:]):
@@ -57,9 +70,19 @@ class _EventHandler(FileSystemEventHandler):
                     return
         self._loop.call_soon_threadsafe(self._queue.put_nowait, evt)
 
-async def monitor(path: PurePath | str, *, filters: list[str] | None = None, recursive=False, ignore_dirs=False) -> AsyncGenerator[Event]:
+async def monitor(path: PurePath, *, filters: list[str] | None = None, recursive=False, ignore_dirs=False) -> AsyncGenerator[Event]:
+    """
+    Monitor path for changes
+
+    :param path Path to the root directory
+    :param filters Glob strings to filter the events with. "+" prefix to include, "-" prefix to exclude.
+    :param recursive Whether to watch for changes recursively
+    :param ignore_dirs: Whether to exclude events regarding directories
+    
+    :return Stream of filesystem events after filtering. The paths are relative to path
+    """
     q = asyncio.Queue[Event]()
-    handler = _EventHandler(asyncio.get_running_loop(), q, filters, ignore_dirs)
+    handler = _EventHandler(asyncio.get_running_loop(), q, path, filters, ignore_dirs)
     obs = Observer()
     obs.schedule(handler, str(path), recursive=recursive)
     obs.start()
