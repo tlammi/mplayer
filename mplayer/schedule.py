@@ -140,8 +140,8 @@ class Schedule(list[Event]):
     Processed schedule where offsets are resolved to time points
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     @staticmethod
     def from_raw(raw: RawSchedule) -> "Schedule":

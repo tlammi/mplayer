@@ -209,3 +209,4 @@ at = 2000-01-01 00:00:00
 """
     with pytest.raises(ValueError):
         Schedule.from_str(data)
+
