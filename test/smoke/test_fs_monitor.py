@@ -106,3 +106,13 @@ async def test_exclusive_pattern(tmpdir):
     create_task(touch())
     evt = await get_first(fs.monitor(tmpdir, filters=["-**/*.a"], ignore_dirs=True, events={fs.EventType.Created}, recursive=True))
     assert evt.src == b.relative_to(tmpdir)
+
+@async_
+async def test_pattern_case_insensitive(tmpdir):
+    a = tmpdir / "file.A"
+    async def touch():
+        a.touch()
+    create_task(touch())
+    evt = await get_first(fs.monitor(tmpdir, filters=["+**/*.a"], ignore_dirs=True, events={fs.EventType.Created}, recursive=True, case_sensitive=False))
+    assert evt.src == a.relative_to(tmpdir)
+
