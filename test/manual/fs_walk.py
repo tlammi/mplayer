@@ -13,8 +13,10 @@ from mplayer import fs
 
 
 async def hello():
-    async for evt in fs.monitor(Path(sys.argv[1]), recursive=True, ignore_dirs=True):
-        print(f"{evt.src} {evt.kind}")
+    path = Path(sys.argv[1])
+    filters = sys.argv[2:]
+    async for entry in fs.walk(Path(sys.argv[1]), filters=filters, ignore_dirs=True):
+        print(entry)
 
 def main():
     asyncio.run(hello())
