@@ -1,6 +1,7 @@
 import pytest
 
 from datetime import datetime, timedelta
+from typing import TypeVar, AsyncGenerator
 
 from mplayer.scheduler import Scheduler
 from mplayer.schedule import Schedule, Event
@@ -9,6 +10,13 @@ from mplayer.schedule import Schedule, Event
 def _mk_dt(hours: int=0, minutes: int=0, seconds: int=0):
     dt = datetime.fromisoformat("2025-04-13")
     return dt + timedelta(hours, minutes, seconds)
+
+T = TypeVar("T")
+
+async def _await_first(gen: AsyncGenerator[T]) -> T:
+    async for i in gen:
+        return i
+    raise AssertionError("Unreachable")
 
 async_ = pytest.mark.asyncio
 
@@ -44,3 +52,9 @@ def test_events_multiple():
     assert evt is not None
     assert evt.playlist == "baz"
 
+@async_
+async def test_await_active():
+    sched = Schedule([Event(playlist="foo", at=_mk_dt(-1))])
+    s = Scheduler(sched)
+    evt = await _await_first(s.event_stream(_mk_dt))
+    assert evt.playlist == "foo"
