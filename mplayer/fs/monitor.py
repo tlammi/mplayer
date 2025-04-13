@@ -42,13 +42,14 @@ class Event:
         return Event(src=src, dst=dst, kind=EventType(evt.event_type), is_directory=evt.is_directory)
 
 class _EventHandler(FileSystemEventHandler):
-    def __init__(self, loop: asyncio.AbstractEventLoop, queue: asyncio.Queue[Event], root: PurePath, filters: list[str] | None, ignore_dirs: bool):
+    def __init__(self, loop: asyncio.AbstractEventLoop, queue: asyncio.Queue[Event], root: PurePath, filters: list[str] | None, ignore_dirs: bool, event_types: set[EventType]):
         super().__init__()
         self._loop = loop
         self._queue = queue
         self._root = root
         self._filters = filters or []
         self._ignore_dirs = ignore_dirs
+        self._type_mask = event_types
         for f in self._filters:
             if not f.startswith("+") and not f.startswith("-"):
                 raise ValueError(f"Filter '{f}' does not start with '+' or '-'")
@@ -57,6 +58,8 @@ class _EventHandler(FileSystemEventHandler):
         if self._ignore_dirs and event.is_directory:
             return
         evt = Event.from_fs_event(event)
+        if evt.kind not in self._type_mask:
+            return
         if evt.src != PurePath():
             evt.src = evt.src.relative_to(self._root)
         if evt.dst != PurePath():
@@ -74,19 +77,22 @@ class _EventHandler(FileSystemEventHandler):
             # The event loop might have been closed
             pass
 
-async def monitor(path: PurePath, *, filters: list[str] | None = None, recursive=False, ignore_dirs=False) -> AsyncGenerator[Event]:
+async def monitor(path: PurePath, *, filters: list[str] | None = None, recursive=False, ignore_dirs=False, events: set[EventType] | None = None) -> AsyncGenerator[Event]:
     """
     Monitor path for changes
 
     :param path Path to the root directory
     :param filters Glob strings to filter the events with. "+" prefix to include, "-" prefix to exclude.
     :param recursive Whether to watch for changes recursively
-    :param ignore_dirs: Whether to exclude events regarding directories
+    :param ignore_dirs Whether to exclude events regarding directories
+    :param events Only emit events with these types. Default (None) means all
     
     :return Stream of filesystem events after filtering. The paths are relative to path
     """
+    if events is None:
+        events = {t for t in EventType}
     q = asyncio.Queue[Event]()
-    handler = _EventHandler(asyncio.get_running_loop(), q, path, filters, ignore_dirs)
+    handler = _EventHandler(asyncio.get_running_loop(), q, path, filters, ignore_dirs, events)
     obs = Observer()
     obs.schedule(handler, str(path), recursive=recursive)
     obs.start()
