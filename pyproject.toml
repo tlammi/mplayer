@@ -20,3 +20,6 @@ packages = ["mplayer"]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"

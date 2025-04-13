@@ -68,7 +68,11 @@ class _EventHandler(FileSystemEventHandler):
             elif f.startswith("-"):
                 if evt.src.full_match(f[1:]):
                     return
-        self._loop.call_soon_threadsafe(self._queue.put_nowait, evt)
+        try:
+            self._loop.call_soon_threadsafe(self._queue.put_nowait, evt)
+        except RuntimeError:
+            # The event loop might have been closed
+            pass
 
 async def monitor(path: PurePath, *, filters: list[str] | None = None, recursive=False, ignore_dirs=False) -> AsyncGenerator[Event]:
     """
