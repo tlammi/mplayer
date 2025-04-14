@@ -1,33 +1,33 @@
 from pathlib import PurePath
 
-from mplayer.config import Config, RawConfig, Playlist, RefPlaylist
+from mplayer.config import Config, Suite
 
 def test_init_default():
-    RawConfig()
     Config()
 
-def test_raw_empty():
+def test_empty():
     data = """
 root = "."
 """
-    c = RawConfig.from_str(data)
+    c = Config.from_str(data)
     assert c.root == PurePath(".")
     assert len(c.playlists) == 0
 
-def test_raw_playlist():
+def test_playlist():
     data = """
 root = "."
 
 [playlist.foo]
 globs = ["asdf"]
 """
-    c = RawConfig.from_str(data)
+    c = Config.from_str(data)
     assert len(c.playlists) == 1
-    v = c.playlists["foo"]
-    assert isinstance(v, Playlist)
+    suite = c.playlists["foo"]
+    assert len(suite) == 1
+    v = suite.pop()
     assert v.globs == ["asdf"]
 
-def test_raw_ref_playlist():
+def test_ref_playlist():
     data = """
 root = "."
 [playlist.foo]
@@ -35,8 +35,28 @@ from = ["bar"]
 [playlist.bar]
 globs = ["asdf"]
 """
-    c = RawConfig.from_str(data)
+    c = Config.from_str(data)
     assert len(c.playlists) == 2
     foo = c.playlists["foo"]
-    assert isinstance(foo, RefPlaylist)
-    assert foo.from_ == ["bar"]
+    assert len(foo) == 1
+    suite = foo.pop()
+    assert suite.globs == ["asdf"]
+
+def test_ref_2_playlist():
+    data = """
+root = "."
+[playlist.foo]
+from = ["bar", "baz"]
+[playlist.bar]
+globs = ["asdf"]
+[playlist.baz]
+globs = ["fdsa"]
+"""
+    c = Config.from_str(data)
+    assert len(c.playlists) == 3
+    foo = c.playlists["foo"]
+    assert len(foo) == 2
+    bar, baz = foo
+    assert bar.globs == ["asdf"]
+    assert baz.globs == ["fdsa"]
+
