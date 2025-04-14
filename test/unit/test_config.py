@@ -1,6 +1,6 @@
 from pathlib import PurePath
 
-from mplayer.config import Config, Suite
+from mplayer.config import Config, FilterNewest
 
 def test_init_default():
     Config()
@@ -59,4 +59,17 @@ globs = ["fdsa"]
     bar, baz = foo
     assert bar.globs == ["asdf"]
     assert baz.globs == ["fdsa"]
+
+def test_filter():
+    data = """
+root = "."
+[playlist.foo]
+globs = ["asdf"]
+filter = { algo = "newest", count = 3 }
+"""
+    c = Config.from_str(data)
+    foo = c.playlists["foo"]
+    filt = foo[0].filter
+    assert isinstance(filt, FilterNewest)
+    assert filt.count == 3
 

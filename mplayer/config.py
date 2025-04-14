@@ -4,12 +4,18 @@ import tomllib
 from pathlib import PurePath
 from dataclasses import dataclass, field
 
+import dacite
+
 
 @dataclass
 class FilterNewest:
     count: int
 
 Filter = None | FilterNewest
+
+_FILTER_MAP = {
+    "newest": FilterNewest
+}
 
 @dataclass
 class Suite:
@@ -31,7 +37,12 @@ class Config:
             if "from" in val:
                 branch_playlists[key] = val["from"]
             else:
-                out.playlists[key] = [Suite(globs=val["globs"])]
+                suite = Suite(globs=val["globs"])
+                filt = val.get("filter")
+                if filt:
+                    algo = filt.pop("algo")
+                    suite.filter = dacite.from_dict(_FILTER_MAP[algo], filt)
+                out.playlists[key] = [suite]
 
         for key, children in branch_playlists.items():
             out.playlists[key] = [p for c in children for p in out.playlists[c]]
