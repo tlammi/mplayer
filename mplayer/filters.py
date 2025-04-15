@@ -1,30 +1,42 @@
+
 from abc import ABC, abstractmethod
+
 from pathlib import Path
-from typing import Iterable
+from typing import AsyncIterator
+from asyncio import Event
 
 
 class Filter(ABC):
 
     @abstractmethod
-    def __call__(self, paths: Iterable[Path]) -> Iterable[Path]:
+    def __aiter__(self) -> AsyncIterator[Path]:
         pass
 
+    @abstractmethod
+    def push(self, path: Path):
+        pass
 
-class Newest(Filter):
-
-    name = "newest"
-
+class FilterNewest(Filter):
     def __init__(self, count: int):
-        super().__init__()
-        self._c = count
+        self._count = count
+        self._queue = []
+        self._items = []
+        self._not_empty = Event()
 
-    def __call__(self, paths: Iterable[Path]):
-        s = sorted(paths, key=lambda p: p.stat().st_mtime, reverse=True)
-        return s[: self._c]
+    def __aiter__(self) -> AsyncIterator[Path]:
+        async def gen():
+            await self._not_empty.wait()
+            while True:
+                if self._queue:
+                    self._items.extend(self._queue)
+                    self._queue = []
+                    self._items.sort(key=lambda x: x.stat().st_mtime)
+                    self._items = self._items[-self._count:]
+                for i in self._items:
+                    yield i
+        return gen()
 
-
-def filter_by_name(nm: str):
-    for candidate in [Newest]:
-        if candidate.name == nm:
-            return Newest
-    raise ValueError(f"Unknown filter: {nm}")
+    def push(self, path: Path):
+        if not self._items:
+            self._not_empty.set()
+        self._queue.append(path)

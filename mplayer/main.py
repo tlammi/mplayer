@@ -5,17 +5,14 @@ import asyncio
 import logging
 import signal
 
-from . import api, util
-from .app import App
-from .playlist import PlaylistSpec, Entry as PlaylistEntry
-from .schedule import Schedule
-from .core import Core, make_core
-
+from . import util
 
 _DEFAULT_SOCKET = os.environ.get("MPLAYER_SOCKET", "/tmp/foo.sock")
 
 _L = logging.getLogger()
 
+async def run(sched: Scheduler):
+    pass
 
 def _parse_cli() -> argparse.Namespace:
     if sys.argv[0].endswith("__main__.py"):
