@@ -1,6 +1,7 @@
 from pathlib import PurePath
+from datetime import timedelta
 
-from mplayer.config import Config, FilterNewest
+from mplayer.config import Config, FilterNewest, FilterNewerThan
 
 def test_init_default():
     Config()
@@ -69,7 +70,21 @@ filter = { algo = "newest", count = 3 }
 """
     c = Config.from_str(data)
     foo = c.playlists["foo"]
-    filt = foo[0].filter
+    filt = foo[0].filters[0]
     assert isinstance(filt, FilterNewest)
     assert filt.count == 3
+
+def test_filter_union():
+    data = """
+root = "."
+[playlist.foo]
+globs = ["asdf"]
+filter = { algo = "newest|newer_than", count = 3, max_age = 01:00:00 }
+"""
+    c = Config.from_str(data)
+    foo = c.playlists["foo"]
+    a, b = foo[0].filters
+    assert isinstance(a, FilterNewest)
+    assert isinstance(b, FilterNewerThan)
+    assert b.max_age == timedelta(hours=1)
 

@@ -7,8 +7,6 @@ import signal
 
 from . import util
 
-_DEFAULT_SOCKET = os.environ.get("MPLAYER_SOCKET", "/tmp/foo.sock")
-
 _L = logging.getLogger()
 
 async def run(sched: Scheduler):

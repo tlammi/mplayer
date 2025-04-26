@@ -1,5 +1,6 @@
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 from pathlib import Path
 from typing import AsyncIterator
@@ -40,3 +41,14 @@ class FilterNewest(Filter):
         if not self._items:
             self._not_empty.set()
         self._queue.append(path)
+
+class FilterNewerThan(Filter):
+    def __init__(self):
+        pass
+
+    def __aiter__(self) -> AsyncIterator[Path]:
+        async def gen():
+            pass
+
+    def push(self, path: Path):
+        pass

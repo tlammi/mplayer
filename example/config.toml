@@ -10,7 +10,7 @@ globs = ["Mainokset/*.mp4"]
 # Filters filer the data dynamically, in this case 5 newest files are selected
 [playlist.pics]
 globs = "Photo/*.JPG"
-filter = { algo = "newest", count = 5 }
+filter = { algo = "newest|newer_than", count = 5,  max_age = 01:00:00 }
 
 # The second variant adds indirection by referencing other playlists.
 [playlist.wed]
