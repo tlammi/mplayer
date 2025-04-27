@@ -5,12 +5,15 @@ import asyncio
 import logging
 import signal
 
+from datetime import datetime
+from pathlib import PurePath
+
 from . import util
+from .scheduler import Scheduler
+from .schedule import Schedule
+from .config import Config
 
 _L = logging.getLogger()
-
-async def run(sched: Scheduler):
-    pass
 
 def _parse_cli() -> argparse.Namespace:
     if sys.argv[0].endswith("__main__.py"):
@@ -24,7 +27,7 @@ def _parse_cli() -> argparse.Namespace:
     )
     p.add_argument(
         "-d",
-        "--debug",
+        "--asyncio-debug",
         help="enable asyncio debugging",
         default=False,
         action=argparse.BooleanOptionalAction,
@@ -36,83 +39,18 @@ def _parse_cli() -> argparse.Namespace:
     p.add_argument(
         "-q", "--quiet", dest="loglevel", action="store_const", const="error"
     )
-    sp = p.add_subparsers(dest="cmd")
-    play = sp.add_parser("play", help="Play files")
-    play.add_argument(
-        "-f",
-        "--fullscreen",
-        default=False,
-        action=argparse.BooleanOptionalAction,
-        help="run in fullscreen",
-    )
-    play.add_argument(
-        "--image-duration",
-        default=None,
-        type=util.parse_timedelta,
-        help="Image duration, e.g. '10s'",
-    )
-    play.add_argument(
-        "--repeat",
-        action=argparse.BooleanOptionalAction,
-        help="Repeat the files",
-        default=False,
-    )
-    play.add_argument(
-        "--schedule",
-        help="Read schedule from file. Implies --repeat. "
-        "This affects what playlists will be played at what time. "
-        "Playlists need to be passed via positional arguments. "
-        "Non-playlist files are part of nameless playlists.",
-    )
-    play.add_argument("files", help="Files to play", nargs="*")
-
-    daemon = sp.add_parser("daemon", help="launch mplayerd")
-    daemon.add_argument("-s", "--socket", help="socket path")
-
-    ctl = sp.add_parser("ctl", help="mplayerctl for controlling mplayerd")
-    ctl.add_argument("-s", "--socket", help="daemon socket path")
-    ctl_sp = ctl.add_subparsers(dest="ctl_cmd")
-    ctl_play = ctl_sp.add_parser("play", help="play files")
-    ctl_play.add_argument("files", help="files to play", nargs="*")
+    p.add_argument("--fullscreen", action=argparse.BooleanOptionalAction, default=False, help="Whether to start the frontend in fullscreen")
+    p.add_argument("--img-dur", help="Image display duration in seconds", type=float)
+    p.add_argument("--blend", help="Media blend duration in seconds", type=float)
+    p.add_argument("--watermark", help="Watermark image")
+    p.add_argument("--watermark-h", help="Watermark height scaling")
+    p.add_argument("--watermark-w", help="Watermark width scaling")
+    p.add_argument("--watermark-pos", help="Watermark position (tl, tm, tr, mr, mm, mr, br, bm, bl)", type=str)
+    p.add_argument("-c", "--config", help="Path to config", type=PurePath, required=True)
+    p.add_argument("-s", "--schedule", help="Path to schedule", type=PurePath, required=True)
     return p.parse_args()
 
-
 async def _run(ns: argparse.Namespace):
-    """
-    Run the player in foreground mode
-    """
-    core = await make_core(ns.files, ns.schedule)
-    asyncio.get_running_loop().add_signal_handler(signal.SIGHUP, core.request_rescan)
-    app = App(core)
-    if ns.image_duration is not None:
-        await app.set_image_duration(ns.image_duration)
-    await app.set_fullscreen(ns.fullscreen)
-    await app.set_repeat(ns.repeat or bool(ns.schedule))
-    await app.play()
-
-
-async def _run_daemon(ns: argparse.Namespace):
-    sock = ns.socket or _DEFAULT_SOCKET
-    srv = api.Server()
-
-    async def on_echo(msg: str):
-        return msg
-
-    srv.route("echo", echoer)
-
-    await api.start_server(sock, api.Server())
-    await asyncio.sleep(10)
-
-
-async def _run_ctl(ns: argparse.Namespace):
-    sock = ns.socket or _DEFAULT_SOCKET
-    c = api.Client(sock)
-    res = await c.echo("asdfsdaf")
-    print("responded with: ", res)
-    pass
-
-
-async def _main_coro(ns: argparse.Namespace):
     def on_sigint():
         _L.info("SIGINT received. Shutting down")
         for t in asyncio.all_tasks():
@@ -120,21 +58,20 @@ async def _main_coro(ns: argparse.Namespace):
 
     loop = asyncio.get_running_loop()
     loop.add_signal_handler(signal.SIGINT, on_sigint)
-    if ns.cmd == "play":
-        await _run(ns)
-    elif ns.cmd == "daemon":
-        await _run_daemon(ns)
-    elif ns.cmd == "ctl":
-        await _run_ctl(ns)
-    else:
-        raise ValueError(f"Unknown command {ns.cmd}")
-
+    sched = Scheduler(Schedule.from_file(ns.schedule))
+    conf = Config.from_file(ns.config)
+    active = sched.active()
+    if active is None:
+        nxt = sched.next()
+        nxt_at = "'never'" if nxt is None else str(nxt.at)
+        time_until = "NaN" if nxt is None else nxt.at - datetime.now()
+        _L.info(f"No active event in schedule. Next event at {nxt_at} (in {time_until})")
 
 def main():
     ns = _parse_cli()
     logging.basicConfig(level=ns.loglevel.upper(), format="[%(levelname)s] %(message)s")
     try:
-        asyncio.run(_main_coro(ns), debug=ns.debug)
+        asyncio.run(_run(ns), debug=ns.asyncio_debug)
     except asyncio.CancelledError:
         pass
 

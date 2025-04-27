@@ -15,7 +15,7 @@ class FilterNewest:
 class FilterNewerThan:
     max_age: timedelta
 
-Filter = None | FilterNewest
+Filter = FilterNewest | FilterNewerThan
 
 _FILTER_MAP = {
     "newest": FilterNewest,
@@ -71,3 +71,8 @@ class Config:
     @classmethod
     def from_str(cls, s: str) -> "Config":
         return cls.from_obj(tomllib.loads(s))
+
+    @classmethod
+    def from_file(cls, p: PurePath) -> "Config":
+        with open(p) as f:
+            return cls.from_str(f.read())
