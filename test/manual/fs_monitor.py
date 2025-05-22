@@ -14,7 +14,7 @@ from mplayer import fs
 
 async def hello():
     async for evt in fs.monitor(Path(sys.argv[1]), recursive=True, ignore_dirs=True):
-        print(f"{evt.src} {evt.kind}")
+        print(f"{evt.src} {evt.dst} {evt.kind}")
 
 def main():
     asyncio.run(hello())
