@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import AsyncGenerator, Iterable
+from typing import Generator
 
 
 def _do_walk(path: Path, ignore_dirs: bool):
@@ -21,7 +21,7 @@ def _passes_filters(path: Path, filters: list[str], case_sensitive: bool|None):
             return False
     return True
 
-async def walk(path: Path, *, filters: list[str] | None = None, ignore_dirs=False, case_sensitive: bool|None=None) -> AsyncGenerator[Path]:
+def walk(path: Path, *, filters: list[str] | None = None, ignore_dirs=False, case_sensitive: bool|None=None) -> Generator[Path]:
     """
     Walk directory recursively and return all child items
 
