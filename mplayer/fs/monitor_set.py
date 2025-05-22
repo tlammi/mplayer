@@ -4,8 +4,8 @@ from . import Event, EventType
 
 class MonitorSet:
 
-    def __init__(self):
-        self._static = set()
+    def __init__(self, initial: set[PurePath]|None = None):
+        self._static = initial or set()
         self._removed = set()
         self._new = set()
         self._modified = set()
