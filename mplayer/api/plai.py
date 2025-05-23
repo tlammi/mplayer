@@ -1,3 +1,5 @@
+import os
+
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -26,7 +28,11 @@ class Session(httpx.AsyncClient):
         await self.send(req) 
 
     async def play(self, playlist: list[str]):
-        ...
+        async def foo():
+            return playlist
+        req = self._mk_request("POST", "play", json=playlist)
+        await self.send(req)
+
 
     async def list_medias(self) -> list[str]:
         req = self._mk_request("GET", "media/image")
@@ -34,8 +40,18 @@ class Session(httpx.AsyncClient):
         res.raise_for_status()
         return res.json()
 
-    async def upload_media(self, key: str, path: Path):
-        ...
+    async def upload_media(self, key: str, path: os.PathLike|str):
+        chunk_size = 1024
+        async def upload():
+            with open(path, "rb") as f:
+                while True:
+                    chunk = f.read(chunk_size)
+                    if not chunk:
+                        break
+                    yield chunk
+        req = self._mk_request("PUT", f"media/image/{key}", content=upload())
+        res = await self.send(req)
+        res.raise_for_status()
 
     async def inspect_media(self, key: str) -> MediaMeta:
         ...
@@ -43,6 +59,6 @@ class Session(httpx.AsyncClient):
     async def delete_media(self, key: str):
         ...
 
-    def _mk_request(self, mthd: str, path: str):
-        return self.build_request(mthd, "http://_/plai/v1/" + path)
+    def _mk_request(self, mthd: str, path: str, **kwargs):
+        return self.build_request(mthd, "http://_/plai/v1/" + path, **kwargs)
 
