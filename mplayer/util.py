@@ -1,4 +1,6 @@
+import asyncio
 from datetime import timedelta, time
+from typing import AsyncGenerator
 
 
 def _get_unit(s: str):
@@ -84,3 +86,25 @@ def parse_time_overflow(s: str) -> tuple[time, int]:
         if part:
             secs = int(part)
     return time(hours, mins, secs), days
+
+
+
+async def multiplex(*generators: AsyncGenerator) -> AsyncGenerator:
+    End = object()
+    q = asyncio.Queue()
+    async def task(generator: AsyncGenerator):
+        async for item in generator:
+            await q.put(item)
+        await q.put(End)
+
+    async with asyncio.TaskGroup() as tg:
+        for g in generators:
+            tg.create_task(task(g))
+        finished = 0
+        count = len(generators)
+        while finished < count:
+            item = await q.get()
+            if item is End:
+                finished += 1
+            else:
+                yield item

@@ -10,10 +10,31 @@ from pathlib import PurePath
 
 from . import util, plai
 from .scheduler import Scheduler
-from .schedule import Schedule
+from .schedule import Schedule, Event as SchedEvent
 from .config import Config
+from .player import Player
 
 _L = logging.getLogger()
+
+def _log_next_event(evt: SchedEvent | None):
+    if evt is None:
+        next_at = "'never'" if evt is None else str(nxt.at)
+        time_until = "NaN" if evt is None else evt.at - datetime.now()
+        _L.info(f"Next event at {next_at} (in {time_until})")
+
+
+async def _consume_schedule(sched: Scheduler, player: Player):
+    active = sched.active()
+    if active is not None:
+        _L.info("Initially active schedule: %s", active.playlist)
+        await player.play(active.playlist)
+    else:
+        _L.info("No active event. Waiting for the first event")
+    _log_next_event(sched.next())
+    async for evt in sched.event_stream():
+        _L.info("Scheduler fired: %s", evt.playlist)
+        await player.play(evt.playlist)
+
 
 def _parse_cli() -> argparse.Namespace:
     if sys.argv[0].endswith("__main__.py"):
@@ -58,12 +79,10 @@ async def _run(ns: argparse.Namespace):
     if ns.plai is not None and conf.plai is not None:
         conf.plai.run = ns.plai
     async with plai.PlaiProcess(conf.plai):
-        active = sched.active()
-        if active is None:
-            nxt = sched.next()
-            nxt_at = "'never'" if nxt is None else str(nxt.at)
-            time_until = "NaN" if nxt is None else nxt.at - datetime.now()
-            _L.info(f"No active event in schedule. Next event at {nxt_at} (in {time_until})")
+        async with asyncio.TaskGroup() as tg:
+            player = Player(conf)
+            tg.create_task(_consume_schedule(sched, player))
+            await player.run()
 
 def main():
     ns = _parse_cli()

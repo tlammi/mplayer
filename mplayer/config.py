@@ -67,7 +67,7 @@ class PlaiConfig:
 class Config:
     playlist_root: PurePath = PurePath(".")
     playlists: dict[str, list[Suite]] = field(default_factory=dict)
-    plai: PlaiConfig | None = None
+    plai: PlaiConfig = field(default_factory=PlaiConfig)
 
     @staticmethod
     def from_obj(d: dict) -> "Config":
@@ -107,6 +107,5 @@ class Config:
         path = config_path.parent
         if not self.playlist_root.is_absolute():
             self.playlist_root = path / self.playlist_root
-        if self.plai:
-            self.plai.resolve_paths(config_path)
+        self.plai.resolve_paths(config_path)
 

@@ -21,16 +21,16 @@ class Session(httpx.AsyncClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    async def ping(self):
+    def ping(self):
         req = self._mk_request("GET", "_ping")
-        await self.send(req) 
+        return self.send(req) 
+
 
     async def play(self, playlist: list[str]):
         async def foo():
             return playlist
         req = self._mk_request("POST", "play", json=playlist)
         await self.send(req)
-
 
     async def list_medias(self) -> list[str]:
         req = self._mk_request("GET", "media/image")
