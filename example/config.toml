@@ -14,6 +14,8 @@ run = false
 
 # Plai command. Either a program name in path or path to the executable
 # This is only used if plai is started by mplayer.
+# Relative paths are relative to the config file.
+# Paths without path separator are searched for in PATH
 path = "plai"
 
 # Path where plai places sqlite database

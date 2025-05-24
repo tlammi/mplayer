@@ -55,6 +55,13 @@ class PlaiConfig:
         out.socket = PurePath(d.get("socket", out.socket))
         return out
 
+    def resolve_paths(self, config_path: PurePath):
+        path = config_path.parent
+        if not self.path.is_absolute() and "/" in self.path.as_posix():
+            self.path = path / self.path
+        if not self.socket.is_absolute() and "/" in self.socket.as_posix():
+            self.socket = path / self.socket
+
 
 @dataclass
 class Config:
@@ -95,3 +102,11 @@ class Config:
     def from_file(cls, p: PurePath) -> "Config":
         with open(p) as f:
             return cls.from_str(f.read())
+
+    def resolve_paths(self, config_path: PurePath):
+        path = config_path.parent
+        if not self.playlist_root.is_absolute():
+            self.playlist_root = path / self.playlist_root
+        if self.plai:
+            self.plai.resolve_paths(config_path)
+

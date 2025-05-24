@@ -8,7 +8,7 @@ import signal
 from datetime import datetime
 from pathlib import PurePath
 
-from . import util
+from . import util, plai
 from .scheduler import Scheduler
 from .schedule import Schedule
 from .config import Config
@@ -39,13 +39,7 @@ def _parse_cli() -> argparse.Namespace:
     p.add_argument(
         "-q", "--quiet", dest="loglevel", action="store_const", const="error"
     )
-    p.add_argument("--fullscreen", action=argparse.BooleanOptionalAction, default=False, help="Whether to start the frontend in fullscreen")
-    p.add_argument("--img-dur", help="Image display duration in seconds", type=float)
-    p.add_argument("--blend", help="Media blend duration in seconds", type=float)
-    p.add_argument("--watermark", help="Watermark image")
-    p.add_argument("--watermark-h", help="Watermark height scaling")
-    p.add_argument("--watermark-w", help="Watermark width scaling")
-    p.add_argument("--watermark-pos", help="Watermark position (tl, tm, tr, mr, mm, mr, br, bm, bl)", type=str)
+    p.add_argument("--plai", action=argparse.BooleanOptionalAction, default=None, help="Start plai as a subprogram")
     p.add_argument("-c", "--config", help="Path to config", type=PurePath, required=True)
     p.add_argument("-s", "--schedule", help="Path to schedule", type=PurePath, required=True)
     return p.parse_args()
@@ -60,12 +54,16 @@ async def _run(ns: argparse.Namespace):
     loop.add_signal_handler(signal.SIGINT, on_sigint)
     sched = Scheduler(Schedule.from_file(ns.schedule))
     conf = Config.from_file(ns.config)
-    active = sched.active()
-    if active is None:
-        nxt = sched.next()
-        nxt_at = "'never'" if nxt is None else str(nxt.at)
-        time_until = "NaN" if nxt is None else nxt.at - datetime.now()
-        _L.info(f"No active event in schedule. Next event at {nxt_at} (in {time_until})")
+    conf.resolve_paths(ns.config)
+    if ns.plai is not None and conf.plai is not None:
+        conf.plai.run = ns.plai
+    async with plai.PlaiProcess(conf.plai):
+        active = sched.active()
+        if active is None:
+            nxt = sched.next()
+            nxt_at = "'never'" if nxt is None else str(nxt.at)
+            time_until = "NaN" if nxt is None else nxt.at - datetime.now()
+            _L.info(f"No active event in schedule. Next event at {nxt_at} (in {time_until})")
 
 def main():
     ns = _parse_cli()

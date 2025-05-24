@@ -5,7 +5,7 @@ import signal
 from typing import Tuple
 
 
-from config import PlaiConfig
+from .config import PlaiConfig
 
 
 
@@ -15,17 +15,17 @@ class PlaiProcess:
 
     If the configuration does not tell to start the subprocess this does nothing.
     """
-    def __init__(self, cfg: PlaiConfig):
-        self._cfg = cfg
+    def __init__(self, cfg: PlaiConfig | None):
+        self._cfg = cfg or PlaiConfig()
         self._prog = None
 
-    async def __aenter__(self):
+    async def __aenter__(self, *_):
         if not self._cfg.run:
             return
         cmd, args = self._plai_cmd()
         self._prog = await asyncio.create_subprocess_exec(cmd, *args)
 
-    async def __aexit__(self):
+    async def __aexit__(self, *_):
         if self._prog is None:
             return
         self._prog.send_signal(signal.SIGINT)
@@ -44,4 +44,3 @@ class PlaiProcess:
         args.append("--socket")
         args.append(str(self._cfg.socket))
         return cmd, args
-
