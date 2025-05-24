@@ -8,15 +8,15 @@ def test_init_default():
 
 def test_empty():
     data = """
-root = "."
+playlist-root = "."
 """
     c = Config.from_str(data)
-    assert c.root == PurePath(".")
+    assert c.playlist_root == PurePath(".")
     assert len(c.playlists) == 0
 
 def test_playlist():
     data = """
-root = "."
+playlist-root = "."
 
 [playlist.foo]
 globs = ["asdf"]
@@ -30,7 +30,7 @@ globs = ["asdf"]
 
 def test_ref_playlist():
     data = """
-root = "."
+playlist-root = "."
 [playlist.foo]
 from = ["bar"]
 [playlist.bar]
@@ -45,7 +45,7 @@ globs = ["asdf"]
 
 def test_ref_2_playlist():
     data = """
-root = "."
+playlist-root = "."
 [playlist.foo]
 from = ["bar", "baz"]
 [playlist.bar]
@@ -63,7 +63,7 @@ globs = ["fdsa"]
 
 def test_filter():
     data = """
-root = "."
+playlist-root = "."
 [playlist.foo]
 globs = ["asdf"]
 filter = { algo = "newest", count = 3 }
@@ -76,7 +76,7 @@ filter = { algo = "newest", count = 3 }
 
 def test_filter_union():
     data = """
-root = "."
+playlist-root = "."
 [playlist.foo]
 globs = ["asdf"]
 filter = { algo = "newest|newer_than", count = 3, max_age = 01:00:00 }

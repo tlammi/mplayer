@@ -1,6 +1,52 @@
 # Root path for the suites/playlists
 # Relative paths are relative to the config file location
-root = "."
+playlist-root = "."
+
+[plai]
+
+# Unix socket where to reach plai
+socket = "/tmp/plai.sock"
+
+
+# Set to true to start plai as a subprocess
+# If false plai is managed externally, e.g. via systemd
+run = false
+
+# Plai command. Either a program name in path or path to the executable
+# This is only used if plai is started by mplayer.
+path = "plai"
+
+# Path where plai places sqlite database
+db = ":memory:"
+
+# Log level
+log-level = "info"
+
+# Whether to fullscreen
+fullscreen = false
+
+# Image duration in seconds
+image-duration = 1.0
+
+# Blend duration when switching from one media to another
+blend-duration = 1.0
+
+[plai.watermark]
+# Path to watermark to render to the screen
+path = ""
+
+# How to scale the watermark
+#
+# This changes behavior depending how the watermark is configured.
+# If non-stretching scaling is enabled this is the max size in
+# relation to viewport dimensions.
+scaling = { w = 1.0, h = 1.0}
+
+# Watermark placement as "<vertical>-<horizontal>"
+# Vertical is one of (top, middle, bottom)
+# Horizontal is one of (left, middle, right)
+position = "bottom-middle"
+
 
 # Playlist is a set of media files to play
 # The first variant prints the globs directly
