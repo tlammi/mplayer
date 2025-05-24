@@ -42,13 +42,29 @@ class Suite:
     filters: list[Filter] = field(default_factory=list)
 
 @dataclass
+class PlaiConfig:
+    run: bool = False
+    path: PurePath = PurePath("plai")
+    socket: PurePath = PurePath("/tmp/plai.sock")
+
+    @staticmethod
+    def from_obj(d: dict) -> "PlaiConfig":
+        out = PlaiConfig()
+        out.run = d.get("run", out.run)
+        out.path = PurePath(d.get("path", out.path))
+        out.socket = PurePath(d.get("socket", out.socket))
+        return out
+
+
+@dataclass
 class Config:
-    root: PurePath = PurePath(".")
+    playlist_root: PurePath = PurePath(".")
     playlists: dict[str, list[Suite]] = field(default_factory=dict)
+    plai: PlaiConfig | None = None
 
     @staticmethod
     def from_obj(d: dict) -> "Config":
-        out = Config(root=PurePath(d["root"]))
+        out = Config(playlist_root=PurePath(d["playlist-root"]))
         branch_playlists = {}
         playlists = d.get("playlist", {})
         while playlists:
@@ -66,6 +82,9 @@ class Config:
 
         for key, children in branch_playlists.items():
             out.playlists[key] = [p for c in children for p in out.playlists[c]]
+        
+        out.plai = PlaiConfig.from_obj(d.get("plai", {}))
+
         return out
 
     @classmethod
