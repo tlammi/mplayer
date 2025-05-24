@@ -1,10 +1,8 @@
 import os
 
-from pathlib import Path
 from dataclasses import dataclass
 
 import httpx
-
 
 
 @dataclass
@@ -40,8 +38,7 @@ class Session(httpx.AsyncClient):
         res.raise_for_status()
         return res.json()
 
-    async def upload_media(self, key: str, path: os.PathLike|str):
-        chunk_size = 1024
+    async def upload_media(self, key: str, path: os.PathLike|str, chunk_size=1024):
         async def upload():
             with open(path, "rb") as f:
                 while True:
@@ -54,10 +51,18 @@ class Session(httpx.AsyncClient):
         res.raise_for_status()
 
     async def inspect_media(self, key: str) -> MediaMeta:
-        ...
+        req = self._mk_request("GET", f"media/image/{key}")
+        res = await self.send(req)
+        res.raise_for_status()
+        obj = res.json()
+        if not isinstance(obj, dict):
+            raise TypeError(f"Expected JSON from API. Got {obj}")
+        return MediaMeta(**obj)
 
-    async def delete_media(self, key: str):
-        ...
+    async def delete_media(self, key: str) -> bool:
+        req = self._mk_request("DELETE", f"media/image/{key}")
+        res = await self.send(req)
+        return res.is_success
 
     def _mk_request(self, mthd: str, path: str, **kwargs):
         return self.build_request(mthd, "http://_/plai/v1/" + path, **kwargs)
