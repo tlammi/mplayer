@@ -37,7 +37,8 @@ def walk(path: Path, *, filters: list[str] | None = None, ignore_dirs=False, cas
     """
     filters = filters or []
     for i in _do_walk(path, ignore_dirs):
-        _L.debug("Walk reached file: %s", i)
         if _passes_filters(i, filters, case_sensitive):
-            _L.debug("Walk matched file: %s", i)
+            _L.debug("FS walk MATCH: %s", i)
             yield i
+        else:
+            _L.debug("FS walk MISS: %s", i)
