@@ -1,6 +1,9 @@
+import logging
+
 from pathlib import Path
 from typing import Generator
 
+_L = logging.getLogger(__name__)
 
 def _do_walk(path: Path, ignore_dirs: bool):
     for parent, dirs, files in path.walk():
@@ -34,5 +37,7 @@ def walk(path: Path, *, filters: list[str] | None = None, ignore_dirs=False, cas
     """
     filters = filters or []
     for i in _do_walk(path, ignore_dirs):
+        _L.debug("Walk reached file: %s", i)
         if _passes_filters(i, filters, case_sensitive):
+            _L.debug("Walk matched file: %s", i)
             yield i
