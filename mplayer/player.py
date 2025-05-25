@@ -11,17 +11,8 @@ from . import config, fs, util, wdog
 _L = logging.getLogger(__name__)
 
 
-_EVENT_FILTER = {
-     fs.EventType.Modified,
-    fs.EventType.Deleted,
-    # Created is not needed since writes also emit a Modified event
-    # fs.EventType.Created,
-    fs.EventType.Moved,
-}
-
-
 async def _monitor_playlist(root: Path, suites: list[config.Suite]) -> AsyncGenerator[fs.Event]:
-    generators = [fs.monitor(root, filters=s.globs, events=_EVENT_FILTER) for s in suites]
+    generators = [fs.monitor(root, filters=s.globs) for s in suites]
     async for i in util.multiplex(*generators):
         yield i
 
@@ -45,6 +36,7 @@ async def _collect_playlist(root: Path, suites: list[config.Suite]) -> AsyncGene
 
     async def subtask():
         async for item in _monitor_playlist(root, suites):
+            _L.debug(f"Filesystem event: %s", item)
             media_set.add(item)
             await wd.kick()
 
