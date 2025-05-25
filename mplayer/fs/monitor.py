@@ -18,6 +18,9 @@ class EventType(Enum):
     ClosedNoWrite = evts.EVENT_TYPE_CLOSED_NO_WRITE
     Opened = evts.EVENT_TYPE_OPENED
 
+def all_events_mask():
+    return {t for t in EventType}
+
 @dataclass
 class Event:
     """
@@ -97,8 +100,7 @@ async def monitor(path: PurePath, *, filters: list[str] | None = None, recursive
 
     :return Stream of filesystem events after filtering. The paths are relative to path
     """
-    if events is None:
-        events = {t for t in EventType}
+    events = all_events_mask() if events is None else events
     q = asyncio.Queue[Event]()
     handler = _EventHandler(asyncio.get_running_loop(), q, path, filters, ignore_dirs, events, case_sensitive)
     obs = Observer()
