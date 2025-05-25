@@ -11,18 +11,20 @@ def _do_walk(path: Path, ignore_dirs: bool):
         if not ignore_dirs:
             yield from [parent/d for d in dirs]
 
-def _passes_filter(path: Path, filter: str, case_sensitive: bool|None):
-    if filter.startswith("+"):
-        return path.full_match(filter[1:], case_sensitive=case_sensitive)
-    if filter.startswith("-"):
-        return not path.full_match(filter[1:], case_sensitive=case_sensitive)
-    raise ValueError(f"Filter '{filter}' does not start with '+' or '-'")
-
-def _passes_filters(path: Path, filters: list[str], case_sensitive: bool|None):
-    for f in filters:
-        if not _passes_filter(path, f, case_sensitive):
-            return False
+def _passes_filter(path: Path, filter: list[str], case_sensitive: bool|None):
+    include = filter[0]
+    if not path.full_match(include, case_sensitive=case_sensitive):
+        return False
+    exclude = filter[1:]
+    if any(path.full_match(e, case_sensitive=case_sensitive) for e in exclude):
+        return False
     return True
+
+def _passes_filters(path: Path, filters: list[list[str]], case_sensitive: bool|None):
+    for f in filters:
+        if _passes_filter(path, f, case_sensitive):
+            return True
+    return False
 
 def walk(path: Path, *, filters: list[str] | None = None, ignore_dirs=False, case_sensitive: bool|None=None) -> Generator[Path]:
     """
@@ -35,9 +37,16 @@ def walk(path: Path, *, filters: list[str] | None = None, ignore_dirs=False, cas
 
     :return Matching filesystem items found
     """
-    filters = filters or []
+    sorted_filters = []
+    for f in filters or []:
+        if f.startswith("+"):
+            sorted_filters.append([f[1:]])
+        elif f.startswith("-"):
+            sorted_filters[-1].append(f[1:])
+        else:
+            raise ValueError(f"Filter '{f}' does not start with + or '")
     for i in _do_walk(path, ignore_dirs):
-        if _passes_filters(i, filters, case_sensitive):
+        if _passes_filters(i, sorted_filters, case_sensitive):
             _L.debug("FS walk MATCH: %s", i)
             yield i.relative_to(path)
         else:

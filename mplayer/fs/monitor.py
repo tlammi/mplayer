@@ -47,13 +47,18 @@ class _EventHandler(FileSystemEventHandler):
         self._loop = loop
         self._queue = queue
         self._root = root
-        self._filters = filters or []
+        #self._filters = filters or []
+        self._filters: list[list[str]] = []
+        for f in filters or []:
+            if f.startswith("+"):
+                self._filters.append([f[1:]])
+            elif f.startswith("-"):
+                self._filters[-1].append(f[1:])
+            else:
+                raise ValueError(f"Filter '{f}' does not start with '+' or '-'")
         self._ignore_dirs = ignore_dirs
         self._type_mask = event_types
         self._case_sensitive = case_sensitive
-        for f in self._filters:
-            if not f.startswith("+") and not f.startswith("-"):
-                raise ValueError(f"Filter '{f}' does not start with '+' or '-'")
 
     def on_any_event(self, event: FileSystemEvent) -> None:
         if self._ignore_dirs and event.is_directory:
@@ -66,24 +71,25 @@ class _EventHandler(FileSystemEventHandler):
         if evt.dst != PurePath():
             evt.dst = evt.dst.relative_to(self._root)
         for f in self._filters:
-            if f.startswith("+"):
-                if not evt.src.full_match(f[1:], case_sensitive=self._case_sensitive):
-                    return
-            elif f.startswith("-"):
-                if evt.src.full_match(f[1:], case_sensitive=self._case_sensitive):
-                    return
-        try:
-            self._loop.call_soon_threadsafe(self._queue.put_nowait, evt)
-        except RuntimeError:
-            # The event loop might have been closed
-            pass
+            include = f[0]
+            if not evt.src.full_match(include, case_sensitive=self._case_sensitive):
+                continue
+            exclude = f[1:]
+            if any(evt.src.match(e, case_sensitive=self._case_sensitive) for e in exclude):
+                continue
+            try:
+                self._loop.call_soon_threadsafe(self._queue.put_nowait, evt)
+            except RuntimeError:
+                # The event loop might have been closed
+                pass
+
 
 async def monitor(path: PurePath, *, filters: list[str] | None = None, recursive=False, ignore_dirs=False, events: set[EventType] | None = None, case_sensitive: bool|None=None) -> AsyncGenerator[Event]:
     """
     Monitor path for changes
 
     :param path Path to the root directory
-    :param filters Glob strings to filter the events with. "+" prefix to include, "-" prefix to exclude.
+    :param filters Glob strings to filter the events with. "+" prefix to include, "-" prefix to exclude. "+" globs are orred together and all "-" filter out items matched by the previous "+" rules
     :param recursive Whether to watch for changes recursively
     :param ignore_dirs Whether to exclude events regarding directories
     :param events Only emit events with these types. Default (None) means all
