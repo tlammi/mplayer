@@ -1,4 +1,5 @@
 import os
+import time
 
 from dataclasses import dataclass
 
@@ -22,21 +23,25 @@ class Session(httpx.AsyncClient):
         super().__init__(*args, **kwargs)
 
     def ping(self):
-        req = self._mk_request("GET", "_ping")
-        return self.send(req) 
+        # TODO: Remove. Need a better way to wait for unix socket
+        time.sleep(10)
+        req = self._mk_request("GET", "_ping", timeout=1.0)
+        return self.send(req)
 
 
     async def play(self, playlist: list[str]):
-        async def foo():
-            return playlist
-        req = self._mk_request("POST", "play", json=playlist)
+        playlist = [f"image/{i}" for i in playlist]
+        req = self._mk_request("POST", "play", json=playlist, params={"replay": "true"})
         await self.send(req)
 
     async def list_medias(self) -> list[str]:
         req = self._mk_request("GET", "media/image")
         res = await self.send(req)
         res.raise_for_status()
-        return res.json()
+        lst = res.json()
+        if not isinstance(lst, list):
+            raise TypeError(f"Unexpected response format from frontend: {lst}")
+        return [i["key"] for i in lst]
 
     async def upload_media(self, key: str, path: os.PathLike|str, chunk_size=1024):
         async def upload():
