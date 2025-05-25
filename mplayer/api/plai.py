@@ -17,15 +17,13 @@ class Session(httpx.AsyncClient):
     @staticmethod
     def unix_session(uds: str) -> "Session":
         tport = httpx.AsyncHTTPTransport(uds=uds)
-        return Session(transport=tport)
+        return Session(transport=tport, timeout=5.0)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def ping(self):
-        # TODO: Remove. Need a better way to wait for unix socket
-        time.sleep(10)
-        req = self._mk_request("GET", "_ping", timeout=1.0)
+        req = self._mk_request("GET", "_ping")
         return self.send(req)
 
 

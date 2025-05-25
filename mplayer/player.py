@@ -5,6 +5,8 @@ from typing import AsyncGenerator
 from pathlib import Path, PurePath
 from dataclasses import dataclass
 
+import httpx
+
 from .api.plai import Session as PlaiSession
 from . import config, fs, util, wdog
 
@@ -95,11 +97,14 @@ class Player:
     async def _wait_plai(self):
         _L.info("Waiting for plai to come up")
         while True:
-            async with PlaiSession.unix_session(str(self._cfg.plai.socket)) as sess:
-                _L.debug("pinging")
-                await sess.ping()
-                _L.info("Plai reached")
-                return
+            try:
+                async with PlaiSession.unix_session(str(self._cfg.plai.socket)) as sess:
+                    _L.debug("pinging")
+                    await sess.ping()
+                    _L.info("Plai reached")
+                    return
+            except httpx.ConnectError:
+                await asyncio.sleep(1)
 
     async def _play(self, media_set: set[PurePath]):
         media_set = {self._cfg.playlist_root / m for m in media_set}
