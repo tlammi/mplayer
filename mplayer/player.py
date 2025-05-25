@@ -10,9 +10,15 @@ from . import config, fs, util, wdog
 
 _L = logging.getLogger(__name__)
 
+_EVENT_MASK = {
+    fs.EventType.Created,
+    fs.EventType.Modified,
+    fs.EventType.Moved,
+    fs.EventType.Deleted,
+}
 
 async def _monitor_playlist(root: Path, suites: list[config.Suite]) -> AsyncGenerator[fs.Event]:
-    generators = [fs.monitor(root, filters=s.globs) for s in suites]
+    generators = [fs.monitor(root, filters=s.globs, events=_EVENT_MASK) for s in suites]
     async for i in util.multiplex(*generators):
         yield i
 
