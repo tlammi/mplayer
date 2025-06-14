@@ -26,7 +26,7 @@ def _passes_filters(path: Path, filters: list[list[str]], case_sensitive: bool|N
             return True
     return False
 
-def walk(path: Path, *, filters: list[str] | None = None, ignore_dirs=False, case_sensitive: bool|None=None) -> Generator[Path]:
+def walk(path: Path, *, filters: list[str] | None = None, ignore_dirs=False, case_sensitive: bool|None=None) -> Generator[Path, None, None]:
     """
     Walk directory recursively and return all child items
 

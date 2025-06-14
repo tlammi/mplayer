@@ -87,7 +87,7 @@ class _EventHandler(FileSystemEventHandler):
                 pass
 
 
-async def monitor(path: PurePath, *, filters: list[str] | None = None, recursive=False, ignore_dirs=False, events: set[EventType] | None = None, case_sensitive: bool|None=None) -> AsyncGenerator[Event]:
+async def monitor(path: PurePath, *, filters: list[str] | None = None, recursive=False, ignore_dirs=False, events: set[EventType] | None = None, case_sensitive: bool|None=None) -> AsyncGenerator[Event, None]:
     """
     Monitor path for changes
 

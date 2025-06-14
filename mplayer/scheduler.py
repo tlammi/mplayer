@@ -24,7 +24,7 @@ class Scheduler:
             return None
         return self._sched[idx]
 
-    async def event_stream(self, clock: Callable[[], datetime] = datetime.now) -> AsyncGenerator[Event]:
+    async def event_stream(self, clock: Callable[[], datetime] = datetime.now) -> AsyncGenerator[Event, None]:
         idx = self._active_idx(clock())
         sched = self._sched
         if idx >= 0:

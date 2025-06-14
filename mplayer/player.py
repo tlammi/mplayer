@@ -19,7 +19,7 @@ _EVENT_MASK = {
     fs.EventType.Deleted,
 }
 
-async def _monitor_playlist(root: Path, suites: list[config.Suite]) -> AsyncGenerator[fs.Event]:
+async def _monitor_playlist(root: Path, suites: list[config.Suite]) -> AsyncGenerator[fs.Event, None]:
     generators = [fs.monitor(root, filters=s.globs, events=_EVENT_MASK) for s in suites]
     async for i in util.multiplex(*generators):
         yield i
@@ -35,7 +35,7 @@ def _walk_playlists(root: Path, suites: list[config.Suite]) -> set[Path]:
 # TODO: This should made better. Now this always emits all files, it would be better to separately report
 # all files and modified files. Maybe return the whole media set before reset so Player can
 # sync files to the frontend more nicely.
-async def _collect_playlist(root: Path, suites: list[config.Suite]) -> AsyncGenerator[set[PurePath]]:
+async def _collect_playlist(root: Path, suites: list[config.Suite]) -> AsyncGenerator[set[PurePath], None]:
     initial = _walk_playlists(root, suites)
     media_set = fs.MonitorSet(initial) #type: ignore
     yield media_set.static
