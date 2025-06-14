@@ -1,4 +1,5 @@
 import logging
+import os
 
 from pathlib import Path
 from typing import Generator
@@ -6,10 +7,11 @@ from typing import Generator
 _L = logging.getLogger(__name__)
 
 def _do_walk(path: Path, ignore_dirs: bool):
-    for parent, dirs, files in path.walk():
-        yield from [parent/f for f in files]
+    for parent, dirs, files in os.walk(path):
+        par = Path(parent)
+        yield from [par/f for f in files]
         if not ignore_dirs:
-            yield from [parent/d for d in dirs]
+            yield from [par/d for d in dirs]
 
 def _passes_filter(path: Path, filter: list[str], case_sensitive: bool|None):
     include = filter[0]
