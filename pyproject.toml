@@ -15,8 +15,9 @@ requires-python = ">=3.11"
 [project.scripts]
 mplayer = "mplayer.main:main"
 
-[tool.setuptools]
-packages = ["mplayer"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mplayer*"]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
