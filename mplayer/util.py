@@ -89,7 +89,7 @@ def parse_time_overflow(s: str) -> tuple[time, int]:
 
 
 
-async def multiplex(*generators: AsyncGenerator) -> AsyncGenerator[None]:
+async def multiplex(*generators: AsyncGenerator) -> AsyncGenerator:
     End = object()
     q = asyncio.Queue()
     async def task(generator: AsyncGenerator):
