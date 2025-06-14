@@ -8,6 +8,8 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
 import watchdog.events as evts
 
+from .full_match import full_match
+
 
 class EventType(Enum):
     Moved = evts.EVENT_TYPE_MOVED
@@ -75,7 +77,7 @@ class _EventHandler(FileSystemEventHandler):
             evt.dst = evt.dst.relative_to(self._root)
         for f in self._filters:
             include = f[0]
-            if not evt.src.full_match(include, case_sensitive=self._case_sensitive):
+            if not full_match(evt.src, include, case_sensitive=self._case_sensitive):
                 continue
             exclude = f[1:]
             if any(evt.src.match(e, case_sensitive=self._case_sensitive) for e in exclude):

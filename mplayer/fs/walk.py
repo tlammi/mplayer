@@ -3,6 +3,7 @@ import os
 
 from pathlib import Path
 from typing import Generator
+from .full_match import full_match
 
 _L = logging.getLogger(__name__)
 
@@ -15,10 +16,10 @@ def _do_walk(path: Path, ignore_dirs: bool):
 
 def _passes_filter(path: Path, filter: list[str], case_sensitive: bool|None):
     include = filter[0]
-    if not path.full_match(include, case_sensitive=case_sensitive):
+    if not full_match(path, include, case_sensitive=case_sensitive):
         return False
     exclude = filter[1:]
-    if any(path.full_match(e, case_sensitive=case_sensitive) for e in exclude):
+    if any(full_match(path, e, case_sensitive=case_sensitive) for e in exclude):
         return False
     return True
 
