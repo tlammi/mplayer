@@ -28,9 +28,9 @@ def _walk_playlist(root: Path, suite: config.Suite) -> fs.MonitorSet:
     _L.info("Walking playlist directories")
     medias = []
     _L.debug("Globs: '%s'", suite.globs)
-    suite_medias = [m for m in fs.walk(root, filters=suite.globs)]
+    suite_medias = [root/m for m in fs.walk(root, filters=suite.globs)]
     selector = fs.make_selector(suite.filters)
-    medias.append(selector.select(suite_medias))
+    medias.extend(selector.select(suite_medias))
     return fs.MonitorSet(set(medias))
 
 # TODO: This should made better. Now this always emits all files, it would be better to separately report
