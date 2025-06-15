@@ -49,8 +49,9 @@ def walk(path: Path, *, filters: list[str] | None = None, ignore_dirs=False, cas
         else:
             raise ValueError(f"Filter '{f}' does not start with + or '")
     for i in _do_walk(path, ignore_dirs):
+        i = i.relative_to(path)
         if _passes_filters(i, sorted_filters, case_sensitive):
             _L.debug("FS walk MATCH: %s", i)
-            yield i.relative_to(path)
+            yield i
         else:
             _L.debug("FS walk MISS: %s", i)
