@@ -81,7 +81,10 @@ class Config:
             if "from" in val:
                 branch_playlists[key] = val["from"]
             else:
-                suite = Suite(globs=val["globs"])
+                globs = val["globs"]
+                if isinstance(globs, str):
+                    globs = [globs]
+                suite = Suite(globs=globs)
                 filt = val.get("filter")
                 if filt:
                     filt = _convert_filter_conf(filt)
