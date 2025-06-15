@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import httpx
 
 from .api.plai import Session as PlaiSession
-from . import config, fs, util, wdog
+from . import config, fs, wdog
 
 _L = logging.getLogger(__name__)
 
@@ -19,42 +19,38 @@ _EVENT_MASK = {
     fs.EventType.Deleted,
 }
 
-async def _monitor_playlist(root: Path, suites: list[config.Suite]) -> AsyncGenerator[fs.Event, None]:
-    generators = [fs.monitor(root, filters=s.globs, events=_EVENT_MASK) for s in suites]
-    async for i in util.multiplex(*generators):
-        yield i
+async def _monitor_task(wd: wdog.Wdog, root: Path, suite: config.Suite, out: fs.MonitorSet):
+    async for i in fs.monitor(root, filters=suite.globs, events=_EVENT_MASK):
+        out.add(i)
+        await wd.kick()
 
-def _walk_playlists(root: Path, suites: list[config.Suite]) -> set[Path]:
+def _walk_playlist(root: Path, suite: config.Suite) -> fs.MonitorSet:
     _L.info("Walking playlist directories")
     medias = []
-    for s in suites:
-        _L.debug("Globs: '%s'", s.globs)
-        for m in fs.walk(root, filters=s.globs): 
-            medias.append(m)
-    return set(medias)
+    _L.debug("Globs: '%s'", suite.globs)
+    suite_medias = [m for m in fs.walk(root, filters=suite.globs)]
+    selector = fs.make_selector(suite.filters)
+    medias.append(selector.select(suite_medias))
+    return fs.MonitorSet(set(medias))
 
 # TODO: This should made better. Now this always emits all files, it would be better to separately report
 # all files and modified files. Maybe return the whole media set before reset so Player can
 # sync files to the frontend more nicely.
-async def _collect_playlist(root: Path, suites: list[config.Suite]) -> AsyncGenerator[set[PurePath], None]:
-    initial = _walk_playlists(root, suites)
-    media_set = fs.MonitorSet(initial) #type: ignore
-    yield media_set.static
+async def _collect_playlist(root: Path, suites: list[config.Suite]) -> AsyncGenerator[set[Path], None]:
+    media_sets = [_walk_playlist(root, s) for s in suites]
+    yield set().union(*[s.static for s in media_sets])
 
     wd = wdog.Wdog(10.0, initial_block=True)
 
-    async def subtask():
-        async for item in _monitor_playlist(root, suites):
-            _L.debug(f"Filesystem event: %s", item)
-            media_set.add(item)
-            await wd.kick()
-
     async with asyncio.TaskGroup() as tg:
-        tg.create_task(subtask())
+        for s, ms in zip(suites, media_sets):
+            tg.create_task(_monitor_task(wd, root, s, ms))
         while True:
             await wd.run()
-            media_set.reset()
-            yield media_set.static
+            for ms in media_sets:
+                ms.reset()
+            yield set().union(*[ms.static for ms in media_sets])
+            pass
 
 
 @dataclass
