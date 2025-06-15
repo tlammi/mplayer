@@ -25,9 +25,10 @@ async def _monitor_playlist(root: Path, suites: list[config.Suite]) -> AsyncGene
         yield i
 
 def _walk_playlists(root: Path, suites: list[config.Suite]) -> set[Path]:
-    _L.debug("Walking playlist directories")
+    _L.info("Walking playlist directories")
     medias = []
     for s in suites:
+        _L.debug("Globs: '%s'", s.globs)
         for m in fs.walk(root, filters=s.globs): 
             medias.append(m)
     return set(medias)
