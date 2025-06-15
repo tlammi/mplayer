@@ -47,10 +47,10 @@ async def _collect_playlist(root: Path, suites: list[config.Suite]) -> AsyncGene
             tg.create_task(_monitor_task(wd, root, s, ms))
         while True:
             await wd.run()
-            for ms in media_sets:
+            for s, ms in zip(suites, media_sets):
                 ms.reset()
+                ms.filter_static(s.filters)
             yield set().union(*[ms.static for ms in media_sets])
-            pass
 
 
 @dataclass

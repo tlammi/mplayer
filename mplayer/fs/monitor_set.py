@@ -1,7 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 
-from . import Event, EventType
+from . import Event, EventType, selectors
 from .. import config
 
 class MonitorSet:
@@ -45,17 +45,9 @@ class MonitorSet:
     def static(self):
         return self._static
 
-    def filter_static(self, rule: config.Filter):
-        if isinstance(rule, config.FilterNewest):
-            if rule.count >= len(self._static):
-                return
-            new = sorted(self._static, key=lambda x: x.stat().st_mtime)
-            self._static = set(new[-rule.count:])
-            return
-        if isinstance(rule, config.FilterNewerThan):
-            cut_off = (datetime.now() - rule.max_age).timestamp()
-            self._static = {s for s in self._static if s.stat().st_mtime > cut_off}
-        raise TypeError(f"Unsupported filter: {type(rule)}")
+    def filter_static(self, rule: list[config.Filter]):
+        selector = selectors.make_selector(rule)
+        self._static = selector.select(self._static)
 
     @property
     def removed(self):
