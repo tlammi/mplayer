@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 dynamic = ["dependencies"]
 name = "mplayer"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
   { name = "Toni Lammi", email="tangojulielima@gmail.com"}
 ]
