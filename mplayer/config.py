@@ -1,7 +1,7 @@
 
 import tomllib
 
-from pathlib import PurePath
+from pathlib import PurePath, Path
 from dataclasses import dataclass, field
 from datetime import timedelta, time
 
@@ -51,8 +51,8 @@ class PlaiConfig:
     def from_obj(d: dict) -> "PlaiConfig":
         out = PlaiConfig()
         out.run = d.get("run", out.run)
-        out.path = PurePath(d.get("path", out.path))
-        out.socket = PurePath(d.get("socket", out.socket))
+        out.path = Path(d.get("path", out.path)).expanduser()
+        out.socket = Path(d.get("socket", out.socket)).expanduser()
         return out
 
     def resolve_paths(self, config_path: PurePath):
@@ -71,7 +71,9 @@ class Config:
 
     @staticmethod
     def from_obj(d: dict) -> "Config":
-        out = Config(playlist_root=PurePath(d["playlist-root"]))
+        playlist_root = Path(d["playlist-root"])
+        playlist_root.expanduser()
+        out = Config(playlist_root=playlist_root.expanduser())
         branch_playlists = {}
         playlists = d.get("playlist", {})
         while playlists:
