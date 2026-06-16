@@ -13,6 +13,7 @@ from .scheduler import Scheduler
 from .schedule import Schedule, Event as SchedEvent
 from .config import Config
 from .player import Player
+from .once import once_cli
 
 _L = logging.getLogger()
 
@@ -63,6 +64,7 @@ def _parse_cli() -> argparse.Namespace:
     p.add_argument("--plai", action=argparse.BooleanOptionalAction, default=None, help="Start plai as a subprogram")
     p.add_argument("-c", "--config", help="Path to config", type=PurePath, required=True)
     p.add_argument("-s", "--schedule", help="Path to schedule", type=PurePath, required=True)
+    p.add_argument("--once", help="Only scan files and report to plai", default=False, action="store_true")
     return p.parse_args()
 
 async def _run(ns: argparse.Namespace):
@@ -87,6 +89,9 @@ async def _run(ns: argparse.Namespace):
 def main():
     ns = _parse_cli()
     logging.basicConfig(level=ns.loglevel.upper(), format="[%(levelname)s] %(message)s")
+    if ns.once:
+        asyncio.run(once_cli(ns), debug=ns.asyncio_debug)
+        return
     try:
         asyncio.run(_run(ns), debug=ns.asyncio_debug)
     except asyncio.CancelledError:
