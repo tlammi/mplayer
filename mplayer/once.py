@@ -5,8 +5,6 @@ import asyncio
 
 from pathlib import Path
 
-import httpx
-
 from .config import Config
 from .schedule import Schedule
 from .scheduler import Scheduler
@@ -15,10 +13,11 @@ from .api.plai import Session as PlaiSession
 
 _L = logging.getLogger(__name__)
 
-async def once(cfg: Config, sched: Schedule, sock: str):
+async def once(cfg: Config, sched: Schedule):
     """
     Script for walking directory hierarchy based on config and populating Plai with the files
     """
+    sock = str(cfg.plai.socket)
     curr = Scheduler(sched).active()
     if curr is None:
         _L.info("No active event in schedule. Doing nothing")
@@ -54,4 +53,4 @@ async def once(cfg: Config, sched: Schedule, sock: str):
 
 
 def once_cli(ns: argparse.Namespace):
-    return once(Config.from_file(ns.config), Schedule.from_file(ns.schedule), ns.sock)
+    return once(Config.from_file(ns.config), Schedule.from_file(ns.schedule))
