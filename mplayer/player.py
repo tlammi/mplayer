@@ -108,6 +108,8 @@ class Player:
         media_info = {(fs.sha256(p), p) for p in media_set}
         async with PlaiSession.unix_session(str(self._cfg.plai.socket)) as sess:
             curr_media = await sess.list_medias()
+            # Only patch if the playlist is not empty
+            do_patch = bool(curr_media)
             _L.debug("Medias in frontend: %s", curr_media)
             missing = {m for m in media_info if m[0] not in curr_media}
             _L.debug("Missing from frontend: %s", missing)
@@ -117,5 +119,11 @@ class Player:
             playlist = [m[0] for m in media_info]
             _L.info("Playing playlist")
             _L.debug("Playlist: %s", playlist)
-            await sess.play(playlist)
+            if do_patch:
+                _L.info("Playlist not empty, patching the playlist")
+                await sess.amend_play(playlist)
+            else:
+                _L.info("Empty playlist, posting")
+                await sess.play(playlist)
+                self._first_play = False
 
