@@ -27,18 +27,20 @@ async def once(cfg: Config, sched: Schedule):
     _L.debug("globs: '%s'", globs)
     root = Path(cfg.playlist_root)
     medias = [root/m for m in fs.walk(root, filters=globs)]
-    media_info = {(fs.sha256(p), p) for p in medias}
+    digests = [fs.sha256(m) for m in medias]
+    media_info = {(d, m) for d, m in zip(digests, medias)}
     async with PlaiSession.unix_session(sock) as sess:
         curr_media = await sess.list_medias()
         # Only patch if the playlist is not empty
         do_patch = bool(curr_media)
         _L.debug("Medias in frontend: %s", curr_media)
         missing = {m for m in media_info if m[0] not in curr_media}
+        extra = {c[0] for c in curr_media if c[0] not in digests}
         _L.debug("Missing from frontend: %s", missing)
         _L.info("Uploading %s medias", len(missing))
         for m in missing:
             await sess.upload_media(m[0], m[1])
-        if not missing:
+        if not missing and not extra:
             _L.info("no changed files. Nothing to do")
             return
         playlist = [m[0] for m in media_info]
