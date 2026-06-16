@@ -39,6 +39,9 @@ async def once(cfg: Config, sched: Schedule, sock: str):
         _L.info("Uploading %s medias", len(missing))
         for m in missing:
             await sess.upload_media(m[0], m[1])
+        if not missing:
+            _L.info("no changed files. Nothing to do")
+            return
         playlist = [m[0] for m in media_info]
         _L.info("Playing playlist")
         _L.debug("Playlist: %s", playlist)
