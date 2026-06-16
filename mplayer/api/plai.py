@@ -28,12 +28,12 @@ class Session(httpx.AsyncClient):
 
 
     async def play(self, playlist: list[str]):
-        playlist = [f"image/{i}" for i in playlist]
+        #playlist = [f"image/{i}" for i in playlist]
         req = self._mk_request("POST", "play", json=playlist, params={"replay": "true"})
         await self.send(req)
 
     async def list_medias(self) -> list[str]:
-        req = self._mk_request("GET", "media/image")
+        req = self._mk_request("GET", "media")
         res = await self.send(req)
         res.raise_for_status()
         lst = res.json()
@@ -49,12 +49,12 @@ class Session(httpx.AsyncClient):
                     if not chunk:
                         break
                     yield chunk
-        req = self._mk_request("PUT", f"media/image/{key}", content=upload())
+        req = self._mk_request("PUT", f"media/items/{key}", content=upload())
         res = await self.send(req)
         res.raise_for_status()
 
     async def inspect_media(self, key: str) -> MediaMeta:
-        req = self._mk_request("GET", f"media/image/{key}")
+        req = self._mk_request("GET", f"media/{key}")
         res = await self.send(req)
         res.raise_for_status()
         obj = res.json()
@@ -63,7 +63,7 @@ class Session(httpx.AsyncClient):
         return MediaMeta(**obj)
 
     async def delete_media(self, key: str) -> bool:
-        req = self._mk_request("DELETE", f"media/image/{key}")
+        req = self._mk_request("DELETE", f"media/{key}")
         res = await self.send(req)
         return res.is_success
 
