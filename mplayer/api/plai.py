@@ -28,8 +28,11 @@ class Session(httpx.AsyncClient):
 
 
     async def play(self, playlist: list[str]):
-        #playlist = [f"image/{i}" for i in playlist]
         req = self._mk_request("POST", "play", json=playlist, params={"replay": "true"})
+        await self.send(req)
+
+    async def amend_play(self, playlist: list[str]):
+        req = self._mk_request("PATCH", "play", json=playlist)
         await self.send(req)
 
     async def list_medias(self) -> list[str]:
@@ -39,7 +42,7 @@ class Session(httpx.AsyncClient):
         lst = res.json()
         if not isinstance(lst, list):
             raise TypeError(f"Unexpected response format from frontend: {lst}")
-        return [i["key"] for i in lst]
+        return lst
 
     async def upload_media(self, key: str, path: os.PathLike|str, chunk_size=1024):
         async def upload():
